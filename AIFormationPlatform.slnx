@@ -1,6 +1,0 @@
-<Solution>
-  <Folder Name="/src/">
-    <Project Path="src/AIFormationPlatform.Tests/AIFormationPlatform.Tests.csproj" />
-    <Project Path="src/AIFormationPlatform.Web/AIFormationPlatform.Web.csproj" />
-  </Folder>
-</Solution>
