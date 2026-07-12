@@ -96,10 +96,27 @@ using (var scope = app.Services.CreateScope())
             UserName = "admin",
             Email = adminEmail,
             EmailConfirmed = true,
-            FullName = "Administrateur"
+            FirstName = "Admin",
+            LastName = "Admin"
         };
         await userManager.CreateAsync(adminUser, "admin");
         await userManager.AddToRoleAsync(adminUser, "Administrator");
+    }
+
+    var studentEmail = "student@student.com";
+    var studentUser = await userManager.FindByEmailAsync(studentEmail);
+    if (studentUser == null)
+    {
+        studentUser = new ApplicationUser
+        {
+            UserName = "student",
+            Email = studentEmail,
+            EmailConfirmed = true,
+            FirstName = "Student",
+            LastName = "Student"
+        };
+        await userManager.CreateAsync(studentUser, "student");
+        await userManager.AddToRoleAsync(studentUser, "Student");
     }
 }
 

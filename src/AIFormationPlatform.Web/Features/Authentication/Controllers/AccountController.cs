@@ -70,15 +70,22 @@ public class AccountController : Controller
 
         if (!ModelState.IsValid) return View(model);
 
-        var result = await _signInManager.PasswordSignInAsync(model.Email, model.Password, model.RememberMe, lockoutOnFailure: false);
+        var user = await _userManager.FindByNameAsync(model.Username);
+        if (user == null)
+        {
+            ModelState.AddModelError(string.Empty, "Nom d'utilisateur ou mot de passe invalide.");
+            return View(model);
+        }
+
+        var result = await _signInManager.PasswordSignInAsync(user, model.Password, model.RememberMe, lockoutOnFailure: false);
 
         if (result.Succeeded)
         {
-            _logger.LogInformation("Connexion réussie pour {Email}", model.Email);
+            _logger.LogInformation("Connexion réussie pour {Username}", model.Username);
             return RedirectToLocal(returnUrl);
         }
 
-        ModelState.AddModelError(string.Empty, "Email ou mot de passe invalide.");
+        ModelState.AddModelError(string.Empty, "Nom d'utilisateur ou mot de passe invalide.");
         return View(model);
     }
 
