@@ -3,14 +3,16 @@
 
     const ANAM_SDK_URL = 'https://esm.sh/@anam-ai/js-sdk@latest';
 
-    const state = {
+    const S = {
         sessionId: null,
         anamClient: null,
         anamReady: false,
         isRecording: false,
         isProcessing: false,
+        isSpeaking: false,
         recognition: null,
-        speechSupported: false
+        speechSupported: false,
+        drawerOpen: false
     };
 
     const $ = (id) => document.getElementById(id);
@@ -18,392 +20,361 @@
     function setStatus(text, mode) {
         const dot = $('status-dot');
         const txt = $('status-text');
-        if (dot) {
-            dot.className = 'status-dot';
-            if (mode) dot.classList.add(mode);
-        }
+        if (dot) { dot.className = 'status-dot'; if (mode) dot.classList.add(mode); }
         if (txt) txt.textContent = text;
     }
 
-    function setButtonStates({ connect, mic, stop }) {
-        const c = $('btn-connect');
-        const m = $('btn-mic');
-        const s = $('btn-stop');
-        if (c) c.disabled = !connect;
-        if (m) m.disabled = !mic;
-        if (s) s.disabled = !stop;
+    function setVisualState(mode) {
+        const ring = $('avatar-ring');
+        const glow = $('avatar-glow');
+        const bars = $('wave-bars');
+        const transcript = $('transcript');
+
+        if (ring) { ring.className = 'avatar-ring'; if (mode) ring.classList.add(mode); }
+        if (glow) { glow.className = 'avatar-glow'; if (mode) glow.classList.add(mode); }
+        if (bars) { bars.className = 'wave-bars'; if (mode) bars.classList.add('visible'); if (mode === 'speaking') bars.classList.add('speaking'); }
+        if (transcript) transcript.className = 'transcript';
     }
 
-    function addMessage(role, content) {
+    function setTranscript(text, role) {
+        const el = $('transcript');
+        if (el) {
+            el.textContent = text;
+            el.className = 'transcript ' + role;
+        }
+    }
+
+    function addChatMessage(role, content) {
         const container = $('chat-messages');
         if (!container) return;
-
-        const welcome = $('chat-welcome');
-        if (welcome) welcome.remove();
-
         const msg = document.createElement('div');
         msg.className = 'chat-msg chat-msg-' + (role === 'user' ? 'user' : 'ai');
         msg.innerHTML =
-            '<div class="chat-msg-label">' + (role === 'user' ? 'Vous' : 'Assistant IA') + '</div>' +
+            '<div class="chat-msg-label">' + (role === 'user' ? 'Vous' : 'Assistant') + '</div>' +
             '<div class="chat-msg-bubble">' + escapeHtml(content) + '</div>';
         container.appendChild(msg);
         container.scrollTop = container.scrollHeight;
-        return msg;
     }
 
-    function addLoading() {
-        const container = $('chat-messages');
-        if (!container) return null;
-        const el = document.createElement('div');
-        el.className = 'chat-loading';
-        el.id = 'chat-loading';
-        el.innerHTML = '<span>&#9679;</span><span>&#9679;</span><span>&#9679;</span>';
-        container.appendChild(el);
-        container.scrollTop = container.scrollHeight;
-        return el;
+    function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
+
+    function setMicEnabled(on) {
+        const btn = $('btn-mic');
+        if (btn) btn.disabled = !on;
     }
 
-    function removeLoading() {
-        const el = $('chat-loading');
-        if (el) el.remove();
+    function setMicRecording(on) {
+        const btn = $('btn-mic');
+        if (btn) btn.classList.toggle('recording', on);
     }
 
-    function escapeHtml(str) {
-        const d = document.createElement('div');
-        d.textContent = str;
-        return d.innerHTML;
-    }
+    // ─── Speech Recognition ───────────────────────────────────
+    function initSpeech() {
+        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SR) { S.speechSupported = false; return; }
 
-    function setWaves(visible) {
-        const w = $('wave-container');
-        if (w) w.classList.toggle('visible', visible);
-    }
+        S.speechSupported = true;
+        S.recognition = new SR();
+        S.recognition.continuous = false;
+        S.recognition.interimResults = true;
+        S.recognition.lang = '';
 
-    function setAvatarActive(active) {
-        const c = $('avatar-container');
-        if (c) c.classList.toggle('active', active);
-    }
-
-    function initSpeechRecognition() {
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SpeechRecognition) {
-            state.speechSupported = false;
-            return;
-        }
-
-        state.speechSupported = true;
-        state.recognition = new SpeechRecognition();
-        state.recognition.continuous = false;
-        state.recognition.interimResults = false;
-
-        state.recognition.onresult = function (event) {
-            const transcript = event.results[0][0].transcript;
-            stopRecording();
-            sendMessage(transcript);
-        };
-
-        state.recognition.onerror = function (event) {
-            console.warn('Speech error:', event.error);
-            stopRecording();
-            if (event.error !== 'no-speech' && event.error !== 'aborted') {
-                addMessage('ai', 'Je n\'ai pas compris. Pourriez-vous répéter ?');
-                speakText('Je n\'ai pas compris. Pourriez-vous répéter ?');
+        S.recognition.onresult = function (e) {
+            let final = '';
+            let interim = '';
+            for (let i = e.resultIndex; i < e.results.length; i++) {
+                if (e.results[i].isFinal) final += e.results[i][0].transcript;
+                else interim += e.results[i][0].transcript;
             }
-        };
-
-        state.recognition.onend = function () {
-            if (state.isRecording) {
+            if (interim) setTranscript(interim, 'user');
+            if (final) {
                 stopRecording();
+                processUserMessage(final);
             }
+        };
+
+        S.recognition.onerror = function (e) {
+            console.warn('STT error:', e.error);
+            stopRecording();
+            if (e.error === 'no-speech' || e.error === 'aborted') {
+                setStatus('Appuyez pour parler', 'connected');
+                setVisualState('');
+                enableMicIfReady();
+            } else {
+                respond('Je n\'ai pas bien entendu. Pourriez-vous répéter ?');
+            }
+        };
+
+        S.recognition.onend = function () {
+            if (S.isRecording) stopRecording();
         };
     }
 
     function startRecording() {
-        if (!state.speechSupported || !state.recognition || state.isRecording || state.isProcessing) return;
-
+        if (!S.speechSupported || !S.recognition || S.isRecording || S.isProcessing || S.isSpeaking) return;
         try {
-            state.isRecording = true;
-            state.recognition.start();
-            const btn = $('btn-mic');
-            if (btn) btn.classList.add('recording');
-            setStatus('Écoute en cours...', 'listening');
-            setWaves(true);
+            S.isRecording = true;
+            S.recognition.start();
+            setMicRecording(true);
+            setStatus('Écoute...', 'listening');
+            setVisualState('listening');
+            setTranscript('...', 'user');
         } catch (e) {
-            console.warn('Recognition start error:', e);
-            state.isRecording = false;
+            S.isRecording = false;
         }
     }
 
     function stopRecording() {
-        state.isRecording = false;
-        if (state.recognition) {
-            try { state.recognition.stop(); } catch (e) { }
-        }
-        const btn = $('btn-mic');
-        if (btn) btn.classList.remove('recording');
-        setWaves(false);
+        S.isRecording = false;
+        if (S.recognition) try { S.recognition.stop(); } catch (e) { }
+        setMicRecording(false);
     }
 
-    async function sendMessage(text) {
-        if (!text || state.isProcessing) return;
-        state.isProcessing = true;
+    // ─── Chat API ─────────────────────────────────────────────
+    async function processUserMessage(text) {
+        if (!text || S.isProcessing) return;
+        S.isProcessing = true;
+        setMicEnabled(false);
 
-        addMessage('user', text);
-        addLoading();
+        addChatMessage('user', text);
+        setTranscript(text, 'user');
         setStatus('Réflexion...', 'thinking');
-        setButtonStates({ connect: false, mic: false, stop: false });
+        setVisualState('thinking');
 
         try {
-            if (!state.sessionId) {
-                state.sessionId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36);
-            }
+            if (!S.sessionId) S.sessionId = crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36);
 
-            const response = await fetch('/api/chat', {
+            const resp = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId: state.sessionId, message: text })
+                body: JSON.stringify({ sessionId: S.sessionId, message: text })
             });
 
-            if (!response.ok) throw new Error('Chat error');
+            if (!resp.ok) throw new Error('API error');
 
-            removeLoading();
-            const aiMsg = addMessage('ai', '');
-            const bubble = aiMsg ? aiMsg.querySelector('.chat-msg-bubble') : null;
             let fullText = '';
-
-            const reader = response.body.getReader();
+            const reader = resp.body.getReader();
             const decoder = new TextDecoder();
 
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
-
-                const text = decoder.decode(value);
-                const lines = text.split('\n');
-
-                for (const line of lines) {
+                const raw = decoder.decode(value);
+                for (const line of raw.split('\n')) {
                     if (!line.startsWith('data: ')) continue;
                     try {
-                        const data = JSON.parse(line.slice(6));
-                        if (data.content) {
-                            fullText += data.content;
-                            if (bubble) bubble.textContent = fullText;
-                            const container = $('chat-messages');
-                            if (container) container.scrollTop = container.scrollHeight;
-                        }
-                        if (data.sessionId) {
-                            state.sessionId = data.sessionId;
-                        }
+                        const d = JSON.parse(line.slice(6));
+                        if (d.content) fullText += d.content;
+                        if (d.sessionId) S.sessionId = d.sessionId;
                     } catch (e) { }
                 }
             }
 
             if (fullText) {
-                setStatus('L\'assistant parle...', 'speaking');
-                setAvatarActive(true);
-                await speakText(fullText);
-                setAvatarActive(false);
-            }
-
-            if (state.anamReady) {
-                setStatus('Connecté — Parlez librement', 'connected');
+                await respond(fullText);
             } else {
-                setStatus('Prêt', 'connected');
-            }
-
-            if (state.speechSupported) {
-                setButtonStates({ connect: !state.anamReady, mic: true, stop: state.anamReady });
+                setStatus('Appuyez pour parler', 'connected');
+                setVisualState('');
+                enableMicIfReady();
             }
 
         } catch (err) {
             console.error('Chat error:', err);
-            removeLoading();
-            addMessage('ai', 'Erreur de connexion. Veuillez réessayer.');
-            setStatus('Erreur', 'error');
+            await respond('Erreur de connexion. Veuillez réessayer.');
         }
 
-        state.isProcessing = false;
+        S.isProcessing = false;
     }
 
-    async function speakText(text) {
-        if (state.anamClient && state.anamReady) {
+    async function respond(text) {
+        addChatMessage('ai', text);
+        setTranscript(text, 'ai');
+        setStatus('L\'assistant parle...', 'speaking');
+        setVisualState('speaking');
+        S.isSpeaking = true;
+        setMicEnabled(false);
+
+        await speakViaAnam(text);
+
+        S.isSpeaking = false;
+        setStatus('Appuyez pour parler', 'connected');
+        setVisualState('');
+        setTranscript('', '');
+        enableMicIfReady();
+    }
+
+    async function speakViaAnam(text) {
+        if (S.anamClient && S.anamReady) {
             try {
-                const stream = state.anamClient.createTalkMessageStream();
-                const chunks = text.match(/.{1,40}/g) || [text];
+                const stream = S.anamClient.createTalkMessageStream();
+                const chunks = text.match(/.{1,35}/g) || [text];
                 for (let i = 0; i < chunks.length; i++) {
                     if (stream.isActive()) {
                         await stream.streamMessageChunk(chunks[i], i === chunks.length - 1);
                     }
                 }
-                await new Promise(resolve => setTimeout(resolve, 1500));
+                await new Promise(r => setTimeout(r, 1200));
                 return;
             } catch (e) {
-                console.warn('Anam TTS failed, falling back to browser:', e);
+                console.warn('Anam TTS failed:', e);
             }
         }
 
         if ('speechSynthesis' in window) {
-            return new Promise((resolve) => {
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.lang = detectLanguage(text);
-                utterance.rate = 1;
-                utterance.onend = resolve;
-                utterance.onerror = resolve;
-                speechSynthesis.speak(utterance);
+            return new Promise(r => {
+                const u = new SpeechSynthesisUtterance(text);
+                u.lang = detectLang(text);
+                u.rate = 1;
+                u.onend = r;
+                u.onerror = r;
+                speechSynthesis.speak(u);
             });
         }
 
-        return new Promise(resolve => setTimeout(resolve, 1000));
+        await new Promise(r => setTimeout(r, 1000));
     }
 
-    function detectLanguage(text) {
-        const arabic = /[\u0600-\u06FF]/;
-        if (arabic.test(text)) return 'ar-MA';
-        if (/\b(what|how|why|when|where|who|can|do|is|are|the|a|an|this|that|i|you|we|they)\b/i.test(text)) return 'en-US';
+    function detectLang(t) {
+        if (/[\u0600-\u06FF]/.test(t)) return 'ar-MA';
+        if (/\b(what|how|why|when|where|who|can|do|is|are|the|a|an|this|that|i|you|we|they)\b/i.test(t)) return 'en-US';
         return 'fr-FR';
     }
 
+    function enableMicIfReady() {
+        if (S.anamReady && S.speechSupported && !S.isProcessing && !S.isSpeaking) {
+            setMicEnabled(true);
+        }
+    }
+
+    // ─── Anam Avatar ──────────────────────────────────────────
     async function connectAnam() {
-        const btn = $('btn-connect');
-        if (btn) btn.disabled = true;
-        setStatus('Connexion avatar...', '');
+        setStatus('Connexion avatar...', 'loading');
 
         try {
             const resp = await fetch('/api/session-token', { method: 'POST' });
             const data = await resp.json();
             if (data.error) throw new Error(data.error);
 
-            setStatus('Chargement avatar...', '');
+            setStatus('Chargement avatar...', 'loading');
 
             const { createClient, AnamEvent } = await import(ANAM_SDK_URL);
-            state.anamClient = createClient(data.sessionToken);
+            S.anamClient = createClient(data.sessionToken);
 
-            state.anamClient.addListener(AnamEvent.SESSION_READY, function () {
-                state.anamReady = true;
-                setStatus('Connecté — Parlez librement', 'connected');
-                setButtonStates({ connect: false, mic: true, stop: true });
-                const video = $('avatar-video');
-                const placeholder = $('avatar-placeholder');
-                if (video) video.classList.add('visible');
-                if (placeholder) placeholder.classList.add('hidden');
+            S.anamClient.addListener(AnamEvent.SESSION_READY, function () {
+                S.anamReady = true;
+                setStatus('Appuyez pour parler', 'connected');
+                setVisualState('');
+                setMicEnabled(true);
+                const v = $('avatar-video');
+                const p = $('avatar-placeholder');
+                if (v) v.classList.add('visible');
+                if (p) p.classList.add('hidden');
             });
 
-            state.anamClient.addListener(AnamEvent.MESSAGE_HISTORY_UPDATED, function (messages) {
-                if (!messages || messages.length === 0) return;
+            S.anamClient.addListener(AnamEvent.MESSAGE_HISTORY_UPDATED, function (messages) {
+                if (!messages || !messages.length) return;
                 const last = messages[messages.length - 1];
                 if (last.role === 'user' && last.content) {
-                    sendMessage(last.content);
+                    processUserMessage(last.content);
                 }
             });
 
-            state.anamClient.addListener(AnamEvent.MESSAGE_STREAM_EVENT_RECEIVED, function (evt) {
+            S.anamClient.addListener(AnamEvent.MESSAGE_STREAM_EVENT_RECEIVED, function (evt) {
                 if (evt.role === 'user') {
                     setStatus('Vous parlez...', 'listening');
+                    setVisualState('listening');
                 } else if (evt.role === 'persona') {
                     setStatus('L\'assistant parle...', 'speaking');
-                    setAvatarActive(true);
+                    setVisualState('speaking');
                 }
             });
 
-            state.anamClient.addListener(AnamEvent.TALK_STREAM_INTERRUPTED, function () {
-                setAvatarActive(false);
-                if (state.anamReady) {
-                    setStatus('Connecté — Parlez librement', 'connected');
+            S.anamClient.addListener(AnamEvent.TALK_STREAM_INTERRUPTED, function () {
+                if (S.anamReady && !S.isProcessing) {
+                    setStatus('Appuyez pour parler', 'connected');
+                    setVisualState('');
                 }
             });
 
-            state.anamClient.addListener(AnamEvent.CONNECTION_CLOSED, function () {
-                state.anamReady = false;
-                setStatus('Avatar déconnecté', 'error');
-                setButtonStates({ connect: true, mic: state.speechSupported, stop: false });
-                const video = $('avatar-video');
-                const placeholder = $('avatar-placeholder');
-                if (video) { video.classList.remove('visible'); video.srcObject = null; }
-                if (placeholder) placeholder.classList.remove('hidden');
+            S.anamClient.addListener(AnamEvent.CONNECTION_CLOSED, function () {
+                S.anamReady = false;
+                setStatus('Avatar déconnecté — reconnexion...', 'error');
+                setMicEnabled(false);
+                const v = $('avatar-video');
+                const p = $('avatar-placeholder');
+                if (v) { v.classList.remove('visible'); v.srcObject = null; }
+                if (p) p.classList.remove('hidden');
+                setTimeout(connectAnam, 3000);
             });
 
-            state.anamClient.addListener(AnamEvent.INPUT_AUDIO_STREAM_STARTED, function () {
+            S.anamClient.addListener(AnamEvent.INPUT_AUDIO_STREAM_STARTED, function () {
                 setStatus('Micro actif — Parlez...', 'listening');
             });
 
-            await state.anamClient.streamToVideoElement('avatar-video');
+            await S.anamClient.streamToVideoElement('avatar-video');
 
         } catch (err) {
-            console.error('Anam connection error:', err);
+            console.error('Anam error:', err);
             setStatus('Avatar indisponible — mode texte', 'connected');
-            setButtonStates({ connect: false, mic: state.speechSupported, stop: false });
+            setMicEnabled(S.speechSupported);
         }
     }
 
     function stopAnam() {
-        if (state.anamClient) {
-            state.anamClient.stopStreaming();
-            state.anamClient = null;
-        }
-        state.anamReady = false;
-        const video = $('avatar-video');
-        const placeholder = $('avatar-placeholder');
-        if (video) { video.classList.remove('visible'); video.srcObject = null; }
-        if (placeholder) placeholder.classList.remove('hidden');
-        setAvatarActive(false);
-        setButtonStates({ connect: true, mic: state.speechSupported, stop: false });
-        setStatus('Déconnecté', '');
+        if (S.anamClient) { S.anamClient.stopStreaming(); S.anamClient = null; }
+        S.anamReady = false;
+        const v = $('avatar-video');
+        const p = $('avatar-placeholder');
+        if (v) { v.classList.remove('visible'); v.srcObject = null; }
+        if (p) p.classList.remove('hidden');
     }
 
     async function restart() {
         stopAnam();
         stopRecording();
-        state.sessionId = null;
-        state.isProcessing = false;
+        S.sessionId = null;
+        S.isProcessing = false;
+        S.isSpeaking = false;
+        if ('speechSynthesis' in window) speechSynthesis.cancel();
 
-        const container = $('chat-messages');
-        if (container) {
-            container.innerHTML = '<div class="chat-welcome" id="chat-welcome"><p>Bonjour ! Je suis votre assistant IA.</p><p>Connectez-vous puis posez-moi vos questions par la voix ou le texte.</p></div>';
-        }
+        fetch('/api/clear-session', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sessionId: S.sessionId })
+        }).catch(() => { });
 
-        if (state.speechSupported) {
-            setButtonStates({ connect: true, mic: false, stop: false });
-        }
-        setStatus('Prêt', '');
+        const msgs = $('chat-messages');
+        if (msgs) msgs.innerHTML = '';
+
+        setVisualState('');
+        setTranscript('', '');
+        setMicEnabled(false);
+        setStatus('Reconnexion...', 'loading');
+        await connectAnam();
     }
 
-    function init() {
-        initSpeechRecognition();
-        setButtonStates({ connect: true, mic: false, stop: false });
+    function toggleDrawer() {
+        S.drawerOpen = !S.drawerOpen;
+        const c = $('drawer-content');
+        if (c) c.classList.toggle('open', S.drawerOpen);
+    }
 
-        $('btn-connect')?.addEventListener('click', connectAnam);
-        $('btn-stop')?.addEventListener('click', stopAnam);
-        $('btn-restart')?.addEventListener('click', restart);
+    // ─── Init ─────────────────────────────────────────────────
+    function init() {
+        initSpeech();
+        setMicEnabled(false);
 
         $('btn-mic')?.addEventListener('click', function () {
-            if (state.isRecording) {
-                stopRecording();
-            } else {
-                startRecording();
-            }
+            if (S.isRecording) stopRecording();
+            else startRecording();
         });
 
-        $('chat-form')?.addEventListener('submit', function (e) {
-            e.preventDefault();
-            const input = $('chat-input');
-            const text = input ? input.value.trim() : '';
-            if (text) {
-                input.value = '';
-                sendMessage(text);
-            }
-        });
+        $('btn-restart')?.addEventListener('click', restart);
+        $('drawer-toggle')?.addEventListener('click', toggleDrawer);
 
-        if (state.speechSupported) {
-            setStatus('Prêt — Connectez l\'avatar ou parlez', '');
-        } else {
-            setStatus('Mode texte uniquement', '');
-            setButtonStates({ connect: true, mic: false, stop: false });
-        }
+        connectAnam();
     }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
-    } else {
-        init();
-    }
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+    else init();
 })();

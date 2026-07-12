@@ -8,83 +8,55 @@
 </head>
 <body>
     <div id="app">
-        <header class="app-header">
-            <h1 class="app-title">Assistant IA</h1>
-            <div class="status-badge" id="status-badge">
-                <span class="status-dot" id="status-dot"></span>
-                <span id="status-text">Initialisation...</span>
-            </div>
-        </header>
+        <div class="status-bar">
+            <span class="status-dot" id="status-dot"></span>
+            <span id="status-text">Chargement...</span>
+        </div>
 
-        <main class="main-area">
-            <div class="avatar-section">
-                <div class="avatar-container" id="avatar-container">
-                    <video id="avatar-video" autoplay playsinline></video>
-                    <div class="avatar-placeholder" id="avatar-placeholder">
-                        <svg viewBox="0 0 100 100" width="120" height="120">
-                            <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" stroke-width="2" opacity="0.3"/>
-                            <circle cx="50" cy="38" r="14" fill="currentColor" opacity="0.3"/>
-                            <path d="M25 75 Q50 55 75 75" fill="none" stroke="currentColor" stroke-width="2" opacity="0.3"/>
-                        </svg>
-                    </div>
-                </div>
-
-                <div class="controls">
-                    <button class="btn-control btn-start" id="btn-connect" title="Connecter l'avatar">
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polygon points="5,3 19,12 5,21"/>
-                        </svg>
-                    </button>
-                    <button class="btn-control btn-mic" id="btn-mic" title="Parler" disabled>
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="9" y="1" width="6" height="12" rx="3"/>
-                            <path d="M5 10a7 7 0 0014 0"/>
-                            <line x1="12" y1="19" x2="12" y2="23"/>
-                            <line x1="8" y1="23" x2="16" y2="23"/>
-                        </svg>
-                    </button>
-                    <button class="btn-control btn-stop" id="btn-stop" title="Arrêter" disabled>
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="6" y="6" width="12" height="12" rx="1"/>
-                        </svg>
-                    </button>
-                    <button class="btn-control btn-restart" id="btn-restart" title="Recommencer">
-                        <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="1,4 1,10 7,10"/>
-                            <path d="M3.51 15a9 9 0 105.64-12.36L1 10"/>
-                        </svg>
-                    </button>
-                </div>
-
-                <div class="wave-container" id="wave-container">
-                    <div class="wave"></div>
-                    <div class="wave"></div>
-                    <div class="wave"></div>
-                    <div class="wave"></div>
-                    <div class="wave"></div>
+        <div class="avatar-area">
+            <div class="avatar-glow" id="avatar-glow"></div>
+            <div class="avatar-ring" id="avatar-ring">
+                <video id="avatar-video" autoplay playsinline></video>
+                <div class="avatar-placeholder" id="avatar-placeholder">
+                    <svg viewBox="0 0 100 100" width="100" height="100">
+                        <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.2"/>
+                        <circle cx="50" cy="38" r="12" fill="currentColor" opacity="0.15"/>
+                        <path d="M28 72 Q50 56 72 72" fill="none" stroke="currentColor" stroke-width="1.5" opacity="0.2"/>
+                    </svg>
                 </div>
             </div>
 
-            <div class="chat-section" id="chat-section">
-                <div class="chat-messages" id="chat-messages">
-                    <div class="chat-welcome" id="chat-welcome">
-                        <p>Bonjour ! Je suis votre assistant IA.</p>
-                        <p>Connectez-vous puis posez-moi vos questions par la voix ou le texte.</p>
-                    </div>
-                </div>
-                <div class="chat-input-area">
-                    <form id="chat-form" class="chat-form">
-                        <input type="text" id="chat-input" class="chat-input" placeholder="Tapez votre message..." autocomplete="off" />
-                        <button type="submit" class="btn-send" id="btn-send" title="Envoyer">
-                            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-                                <line x1="22" y1="2" x2="11" y2="13"/>
-                                <polygon points="22,2 15,22 11,13 2,9"/>
-                            </svg>
-                        </button>
-                    </form>
-                </div>
+            <div class="transcript" id="transcript"></div>
+
+            <div class="wave-bars" id="wave-bars">
+                <span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span>
             </div>
-        </main>
+        </div>
+
+        <div class="controls-area">
+            <button class="btn-mic" id="btn-mic" title="Appuyez pour parler">
+                <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="9" y="1" width="6" height="12" rx="3"/>
+                    <path d="M5 10a7 7 0 0014 0"/>
+                    <line x1="12" y1="19" x2="12" y2="23"/>
+                    <line x1="8" y1="23" x2="16" y2="23"/>
+                </svg>
+            </button>
+            <button class="btn-restart" id="btn-restart" title="Nouvelle conversation">
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="1,4 1,10 7,10"/>
+                    <path d="M3.51 15a9 9 0 105.64-12.36L1 10"/>
+                </svg>
+            </button>
+        </div>
+
+        <div class="chat-drawer" id="chat-drawer">
+            <button class="drawer-toggle" id="drawer-toggle">Historique</button>
+            <div class="drawer-content" id="drawer-content">
+                <div class="chat-messages" id="chat-messages"></div>
+            </div>
+        </div>
     </div>
 
     <script src="~/js/assistant.js"></script>
