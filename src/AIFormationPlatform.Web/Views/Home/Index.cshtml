@@ -1,0 +1,66 @@
+﻿@model IEnumerable<AIFormationPlatform.Web.Shared.Controllers.FormationCatalogItem>
+@{
+    ViewData["Title"] = "Accueil";
+}
+
+<div class="text-center mb-5">
+    <h1 class="display-4">AI Formation Platform</h1>
+    <p class="lead">Plateforme intelligente de gestion des formations avec Formateur IA interactif</p>
+
+    @if (User.Identity?.IsAuthenticated != true)
+    {
+        <div class="mt-4">
+            <a asp-controller="Account" asp-action="Register" class="btn btn-primary btn-lg me-2">Commencer maintenant</a>
+            <a asp-controller="Account" asp-action="Login" class="btn btn-outline-secondary btn-lg">Se connecter</a>
+        </div>
+    }
+    else if (User.IsInRole("Administrator"))
+    {
+        <div class="mt-4">
+            <a asp-controller="Dashboard" asp-action="Index" class="btn btn-primary btn-lg">Tableau de bord</a>
+        </div>
+    }
+    else if (User.IsInRole("Student"))
+    {
+        <div class="mt-4">
+            <a asp-controller="Enrollments" asp-action="MyFormations" class="btn btn-primary btn-lg">Mes formations</a>
+        </div>
+    }
+</div>
+
+@if (Model.Any())
+{
+    <h3 class="mb-3">Formations disponibles</h3>
+    <div class="row">
+        @foreach (var formation in Model)
+        {
+            <div class="col-md-4 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">@formation.Title</h5>
+                        <p class="card-text text-muted">@formation.Description</p>
+                        <small class="text-muted">@formation.ModuleCount module(s)</small>
+                    </div>
+                    <div class="card-footer">
+                        @if (User.IsInRole("Student"))
+                        {
+                            <form asp-controller="Enrollments" asp-action="Enroll" method="post">
+                                @Html.AntiForgeryToken()
+                                <input type="hidden" name="formationId" value="@formation.Id" />
+                                <button type="submit" class="btn btn-primary btn-sm">S'inscrire</button>
+                            </form>
+                        }
+                        else if (User.Identity?.IsAuthenticated != true)
+                        {
+                            <a asp-controller="Account" asp-action="Login" class="btn btn-outline-primary btn-sm">Se connecter pour s'inscrire</a>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="alert alert-info">Aucune formation disponible pour le moment.</div>
+}

@@ -1,0 +1,10 @@
+bin/
+obj/
+*.user
+*.suo
+.vs/
+.vscode/
+.idea/
+node_modules/
+appsettings.Development.json
+*.DotSettings.user

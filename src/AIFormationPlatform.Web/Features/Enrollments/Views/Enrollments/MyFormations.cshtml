@@ -1,0 +1,44 @@
+@model IEnumerable<AIFormationPlatform.Web.Features.Enrollments.ViewModels.EnrollmentViewModel>
+@{
+    ViewData["Title"] = "Mes formations";
+}
+
+<h2>Mes formations</h2>
+<hr />
+
+@if (Model.Any())
+{
+    <div class="row">
+        @foreach (var enrollment in Model)
+        {
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-body">
+                        <h5 class="card-title">@enrollment.FormationTitle</h5>
+                        <p class="card-text text-muted">@enrollment.FormationDescription</p>
+                        <div class="progress mb-2">
+                            <div class="progress-bar" role="progressbar" style="width: @(enrollment.ProgressPercentage)%">@enrollment.ProgressPercentage%</div>
+                        </div>
+                        <small class="text-muted">@enrollment.CompletedLessons / @enrollment.TotalLessons leçons terminées</small>
+                    </div>
+                    <div class="card-footer">
+                        <a asp-action="Progress" asp-route-formationId="@enrollment.FormationId" class="btn btn-primary btn-sm">Continuer</a>
+                        @if (enrollment.ProgressPercentage >= 100 && enrollment.TotalLessons > 0)
+                        {
+                            <form asp-controller="Certificates" asp-action="Download" asp-route-formationId="@enrollment.FormationId" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="btn btn-success btn-sm">Certificat</button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+else
+{
+    <div class="alert alert-info">
+        Vous n'êtes inscrit à aucune formation. <a asp-controller="Home" asp-action="Index">Découvrir les formations</a>
+    </div>
+}

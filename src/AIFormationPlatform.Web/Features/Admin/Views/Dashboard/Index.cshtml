@@ -1,0 +1,46 @@
+@model AIFormationPlatform.Web.Features.Admin.ViewModels.DashboardViewModel
+@{
+    ViewData["Title"] = "Tableau de bord";
+}
+
+<h2>Tableau de bord administrateur</h2>
+<hr />
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Formations</h5>
+                <h2>@Model.TotalFormations</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Publiées</h5>
+                <h2>@Model.PublishedFormations</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Étudiants</h5>
+                <h2>@Model.TotalStudents</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card text-white bg-warning mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Inscriptions</h5>
+                <h2>@Model.TotalEnrollments</h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="mt-4">
+    <a asp-controller="Formations" asp-action="Index" class="btn btn-primary">Gérer les formations</a>
+</div>

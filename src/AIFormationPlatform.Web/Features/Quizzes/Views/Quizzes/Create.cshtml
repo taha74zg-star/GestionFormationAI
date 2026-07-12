@@ -1,0 +1,59 @@
+@model AIFormationPlatform.Web.Features.Quizzes.ViewModels.QuizFormViewModel
+@{
+    ViewData["Title"] = "Créer un quiz";
+}
+
+<h2>Créer un quiz — @ViewBag.FormationTitle</h2>
+<hr />
+
+<form asp-action="Create" method="post">
+    <input type="hidden" asp-for="FormationId" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+
+    <div class="mb-3">
+        <label asp-for="Title" class="form-label">Titre du quiz</label>
+        <input asp-for="Title" class="form-control" />
+        <span asp-validation-for="Title" class="text-danger"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="TimeLimitMinutes" class="form-label">Durée (minutes)</label>
+        <input asp-for="TimeLimitMinutes" class="form-control" type="number" />
+    </div>
+
+    <hr />
+    <h4>Questions</h4>
+    <div id="questions-container">
+        <div class="question-block card mb-3 p-3">
+            <h5 class="mb-3">Question 1</h5>
+            <div class="mb-2">
+                <label class="form-label">Texte de la question</label>
+                <input type="text" name="Questions[0].Text" class="form-control" required />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Points</label>
+                <input type="number" name="Questions[0].Points" class="form-control" value="1" min="1" />
+            </div>
+            <div class="mb-2">
+                <label class="form-label">Choix de réponses (cochez la bonne réponse)</label>
+                @for (int i = 0; i < 4; i++)
+                {
+                    <div class="input-group mb-1">
+                        <div class="input-group-text">
+                            <input type="radio" name="Questions[0].AnswerChoices[@i].IsCorrect" value="true" @(i == 0 ? "checked" : "") />
+                        </div>
+                        <input type="text" name="Questions[0].AnswerChoices[@i].Text" class="form-control" placeholder="Choix @(i + 1)" required />
+                        <input type="hidden" name="Questions[0].AnswerChoices[@i].IsCorrect" value="false" />
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary">Enregistrer le quiz</button>
+    <a asp-action="Index" asp-route-formationId="@Model.FormationId" class="btn btn-secondary">Annuler</a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
