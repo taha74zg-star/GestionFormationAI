@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-COPY AIFormationPlatform.sln .
+COPY AIFormationPlatform.slnx .
 COPY src/AIFormationPlatform.Web/*.csproj src/AIFormationPlatform.Web/
 COPY src/AIFormationPlatform.Tests/*.csproj src/AIFormationPlatform.Tests/
 RUN dotnet restore
