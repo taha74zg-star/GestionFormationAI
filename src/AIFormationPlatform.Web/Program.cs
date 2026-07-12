@@ -1,4 +1,5 @@
 using AIFormationPlatform.Web.Data;
+using AIFormationPlatform.Web.Features.AITrainer.Services;
 using AIFormationPlatform.Web.Features.Certificates.Services;
 using AIFormationPlatform.Web.Models;
 using Microsoft.AspNetCore.Identity;
@@ -44,6 +45,9 @@ builder.Services.ConfigureApplicationCookie(options =>
 });
 
 builder.Services.AddScoped<ICertificateService, CertificateService>();
+builder.Services.AddScoped<IAIProvider, OpenAIProvider>();
+builder.Services.AddScoped<IAITrainerService, AITrainerService>();
+builder.Services.AddHttpClient();
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();

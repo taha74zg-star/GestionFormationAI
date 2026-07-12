@@ -23,17 +23,49 @@
 @if (User.IsInRole("Student"))
 {
     <div class="mt-4">
-        <h4>Formateur IA</h4>
-        <div class="card" id="ai-trainer-section">
-            <div class="card-body">
-                <div id="chat-messages" class="mb-3" style="max-height: 400px; overflow-y: auto;">
+        <h4>Formateur IA Interactif</h4>
+        <input type="hidden" id="ai-trainer-data" data-lesson-id="@Model.Id" />
+
+        <div class="at-container">
+            <div>
+                <div class="at-avatar-panel">
+                    <video id="at-avatar-video" autoplay playsinline></video>
+                    <div class="at-avatar-placeholder" id="at-placeholder">
+                        <div>🎓</div>
+                        <div style="font-size: 1rem; margin-top: 8px;">Formateur IA</div>
+                    </div>
+                    <div class="at-status-bar">
+                        <span class="at-status-dot" id="at-status-dot"></span>
+                        <span id="at-status-label">Prêt à démarrer</span>
+                    </div>
                 </div>
-                <form id="chat-form" class="d-flex gap-2">
+                <div class="at-controls">
+                    <button type="button" class="at-btn at-btn-start" id="at-btn-start" title="Démarrer l'avatar">
+                        ▶
+                    </button>
+                    <button type="button" class="at-btn at-btn-stop" id="at-btn-stop" title="Arrêter l'avatar" disabled>
+                        ■
+                    </button>
+                </div>
+            </div>
+
+            <div class="at-chat-panel">
+                <div class="at-chat-messages" id="at-messages">
+                    <div class="at-msg at-msg-ai">
+                        <div class="at-msg-label">Formateur IA</div>
+                        <div class="at-msg-bubble">Bonjour ! Je suis votre formateur IA. Posez-moi vos questions sur cette leçon.</div>
+                    </div>
+                </div>
+
+                <div id="at-fallback" class="at-fallback">
+                    <p>Utilisez le champ ci-dessous pour poser vos questions par texte.</p>
+                </div>
+
+                <form id="at-text-form" class="at-chat-input" autocomplete="off">
                     @Html.AntiForgeryToken()
-                    <input type="hidden" id="lessonId" value="@Model.Id" />
-                    <input type="hidden" id="conversationId" value="" />
-                    <input type="text" id="question-input" class="form-control" placeholder="Posez une question sur cette leçon..." />
-                    <button type="submit" class="btn btn-primary">Envoyer</button>
+                    <input type="hidden" name="lessonId" value="@Model.Id" />
+                    <input type="text" id="at-text-input" class="form-control" placeholder="Posez une question sur cette leçon..." />
+                    <button type="submit" id="at-send-btn">Envoyer</button>
                 </form>
             </div>
         </div>
@@ -56,56 +88,6 @@
 }
 
 @section Scripts {
-    <script>
-        document.getElementById('chat-form').addEventListener('submit', async function (e) {
-            e.preventDefault();
-
-            const input = document.getElementById('question-input');
-            const question = input.value.trim();
-            if (!question) return;
-
-            const lessonId = document.getElementById('lessonId').value;
-            const conversationId = document.getElementById('conversationId').value;
-            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
-
-            const messagesDiv = document.getElementById('chat-messages');
-            messagesDiv.innerHTML += `<div class="mb-2"><strong>Vous :</strong> ${question}</div>`;
-            input.value = '';
-
-            messagesDiv.innerHTML += `<div class="mb-2 text-muted" id="loading-msg">Le Formateur IA réfléchit...</div>`;
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-            try {
-                const response = await fetch('/AITrainer/Ask', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'RequestVerificationToken': token
-                    },
-                    body: JSON.stringify({
-                        question: question,
-                        lessonId: parseInt(lessonId),
-                        conversationId: conversationId ? parseInt(conversationId) : null
-                    })
-                });
-
-                const data = await response.json();
-                document.getElementById('loading-msg')?.remove();
-
-                if (data.success) {
-                    messagesDiv.innerHTML += `<div class="mb-2"><strong>Formateur IA :</strong> ${data.response}</div>`;
-                    if (data.conversationId) {
-                        document.getElementById('conversationId').value = data.conversationId;
-                    }
-                } else {
-                    messagesDiv.innerHTML += `<div class="mb-2 text-danger"><strong>Erreur :</strong> ${data.message}</div>`;
-                }
-            } catch (err) {
-                document.getElementById('loading-msg')?.remove();
-                messagesDiv.innerHTML += `<div class="mb-2 text-danger">Erreur de connexion.</div>`;
-            }
-
-            messagesDiv.scrollTop = messagesDiv.scrollHeight;
-        });
-    </script>
+    <link rel="stylesheet" href="~/css/ai-trainer.css" />
+    <script src="~/js/ai-trainer.js"></script>
 }

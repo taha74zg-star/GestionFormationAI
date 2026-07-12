@@ -43,22 +43,7 @@ public class AITrainerService : IAITrainerService
                 };
             }
 
-            var conversation = conversationId.HasValue
-                ? await _context.AIConversations
-                    .FirstOrDefaultAsync(c => c.Id == conversationId.Value && c.UserId == userId, cancellationToken)
-                : null;
-
-            if (conversation == null)
-            {
-                conversation = new AIConversation
-                {
-                    UserId = userId,
-                    LessonId = lessonId,
-                    CreatedAt = DateTime.UtcNow
-                };
-                _context.AIConversations.Add(conversation);
-                await _context.SaveChangesAsync(cancellationToken);
-            }
+            var conversation = await GetOrCreateConversationAsync(userId, lessonId, conversationId, cancellationToken);
 
             _context.AIMessages.Add(new AIMessage
             {
@@ -67,11 +52,11 @@ public class AITrainerService : IAITrainerService
                 Content = question,
                 SentAt = DateTime.UtcNow
             });
+            await _context.SaveChangesAsync(cancellationToken);
 
+            var history = await GetConversationHistoryAsync(conversation.Id, cancellationToken);
             var systemPrompt = AITrainerPrompts.GetSystemPrompt(lesson.Content);
-            var userPrompt = AITrainerPrompts.GetUserPrompt(question);
-
-            var response = await _aiProvider.GenerateResponseAsync(systemPrompt, userPrompt, cancellationToken);
+            var response = await _aiProvider.GenerateResponseWithHistoryAsync(systemPrompt, history, cancellationToken);
 
             _context.AIMessages.Add(new AIMessage
             {
@@ -80,7 +65,6 @@ public class AITrainerService : IAITrainerService
                 Content = response,
                 SentAt = DateTime.UtcNow
             });
-
             await _context.SaveChangesAsync(cancellationToken);
 
             return new AITrainerResponse
@@ -99,5 +83,97 @@ public class AITrainerService : IAITrainerService
                 ErrorMessage = "Le Formateur IA est temporairement indisponible. Veuillez réessayer ultérieurement."
             };
         }
+    }
+
+    public async IAsyncEnumerable<StreamingChunk> AskQuestionStreamingAsync(
+        string userId,
+        int lessonId,
+        string question,
+        int? conversationId = null,
+        [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken cancellationToken = default)
+    {
+        var lesson = await _context.Lessons
+            .Include(l => l.Module)
+            .FirstOrDefaultAsync(l => l.Id == lessonId, cancellationToken);
+
+        if (lesson == null)
+        {
+            yield return new StreamingChunk { Content = "Leçon introuvable.", IsComplete = true };
+            yield break;
+        }
+
+        var conversation = await GetOrCreateConversationAsync(userId, lessonId, conversationId, cancellationToken);
+
+        _context.AIMessages.Add(new AIMessage
+        {
+            ConversationId = conversation.Id,
+            Role = "User",
+            Content = question,
+            SentAt = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync(cancellationToken);
+
+        var history = await GetConversationHistoryAsync(conversation.Id, cancellationToken);
+        var systemPrompt = AITrainerPrompts.GetSystemPrompt(lesson.Content);
+
+        var fullResponse = new System.Text.StringBuilder();
+
+        await foreach (var chunk in _aiProvider.GenerateStreamingResponseAsync(systemPrompt, history, cancellationToken))
+        {
+            fullResponse.Append(chunk);
+            yield return new StreamingChunk
+            {
+                Content = chunk,
+                IsComplete = false,
+                ConversationId = conversation.Id
+            };
+        }
+
+        _context.AIMessages.Add(new AIMessage
+        {
+            ConversationId = conversation.Id,
+            Role = "Assistant",
+            Content = fullResponse.ToString(),
+            SentAt = DateTime.UtcNow
+        });
+        await _context.SaveChangesAsync(cancellationToken);
+
+        yield return new StreamingChunk
+        {
+            Content = string.Empty,
+            IsComplete = true,
+            ConversationId = conversation.Id
+        };
+    }
+
+    private async Task<AIConversation> GetOrCreateConversationAsync(
+        string userId, int lessonId, int? conversationId, CancellationToken ct)
+    {
+        if (conversationId.HasValue)
+        {
+            var existing = await _context.AIConversations
+                .FirstOrDefaultAsync(c => c.Id == conversationId.Value && c.UserId == userId, ct);
+            if (existing != null) return existing;
+        }
+
+        var conversation = new AIConversation
+        {
+            UserId = userId,
+            LessonId = lessonId,
+            CreatedAt = DateTime.UtcNow
+        };
+        _context.AIConversations.Add(conversation);
+        await _context.SaveChangesAsync(ct);
+        return conversation;
+    }
+
+    private async Task<List<(string Role, string Content)>> GetConversationHistoryAsync(
+        int conversationId, CancellationToken ct)
+    {
+        return await _context.AIMessages
+            .Where(m => m.ConversationId == conversationId)
+            .OrderBy(m => m.SentAt)
+            .Select(m => new ValueTuple<string, string>(m.Role, m.Content))
+            .ToListAsync(ct);
     }
 }
