@@ -48,6 +48,14 @@ builder.Services.AddScoped<ICertificateService, CertificateService>();
 builder.Services.AddScoped<IAIProvider, OpenAIProvider>();
 builder.Services.AddScoped<IAITrainerService, AITrainerService>();
 builder.Services.AddHttpClient();
+builder.Services.Configure<Microsoft.AspNetCore.Mvc.Razor.RazorViewEngineOptions>(options =>
+{
+    options.ViewLocationFormats.Clear();
+    options.ViewLocationFormats.Add("/Views/{1}/{0}" + Microsoft.AspNetCore.Mvc.Razor.RazorViewEngine.ViewExtension);
+    options.ViewLocationFormats.Add("/Features/{1}/Views/{1}/{0}" + Microsoft.AspNetCore.Mvc.Razor.RazorViewEngine.ViewExtension);
+    options.ViewLocationFormats.Add("/Features/{1}/Views/{0}" + Microsoft.AspNetCore.Mvc.Razor.RazorViewEngine.ViewExtension);
+    options.ViewLocationFormats.Add("/Views/Shared/{0}" + Microsoft.AspNetCore.Mvc.Razor.RazorViewEngine.ViewExtension);
+});
 builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
