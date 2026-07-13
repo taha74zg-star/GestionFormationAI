@@ -71,9 +71,9 @@ app.MapPost("/api/session-token", async (IHttpClientFactory httpClientFactory, I
             personaConfig = new
             {
                 name = "Assistant IA",
-                avatarId = "30fa96d0-26c4-4e55-94a0-517025942e18",
+                avatarId = "ccf00c0e-7302-455b-ace2-057e0cf58127",
                 avatarModel = "cara-4",
-                voiceId = "6bfbe25a-979d-40f3-a92b-5394170af54b",
+                voiceId = "8f80e347-4fc0-11f1-84b0-52bacf74fa75",
                 llmId = "CUSTOMER_CLIENT_V1",
                 systemPrompt = "Tu es un assistant IA intelligent et amical. Réponds toujours dans la langue de l'utilisateur."
             }

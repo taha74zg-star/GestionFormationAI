@@ -10,6 +10,7 @@
         isRecording: false,
         isProcessing: false,
         isSpeaking: false,
+        isConversationActive: false,
         recognition: null,
         speechSupported: false,
         drawerOpen: false
@@ -28,19 +29,21 @@
         const ring = $('avatar-ring');
         const glow = $('avatar-glow');
         const bars = $('wave-bars');
-        const transcript = $('transcript');
 
         if (ring) { ring.className = 'avatar-ring'; if (mode) ring.classList.add(mode); }
         if (glow) { glow.className = 'avatar-glow'; if (mode) glow.classList.add(mode); }
-        if (bars) { bars.className = 'wave-bars'; if (mode) bars.classList.add('visible'); if (mode === 'speaking') bars.classList.add('speaking'); }
-        if (transcript) transcript.className = 'transcript';
+        if (bars) {
+            bars.className = 'wave-bars';
+            if (mode) bars.classList.add('visible');
+            if (mode === 'speaking') bars.classList.add('speaking');
+        }
     }
 
     function setTranscript(text, role) {
         const el = $('transcript');
         if (el) {
             el.textContent = text;
-            el.className = 'transcript ' + role;
+            el.className = 'transcript ' + (role || '');
         }
     }
 
@@ -48,7 +51,7 @@
         const container = $('chat-messages');
         if (!container) return;
         const msg = document.createElement('div');
-        msg.className = 'chat-msg chat-msg-' + (role === 'user' ? 'user' : 'ai');
+        msg.className = 'chat-msg chat-msg-' + role;
         msg.innerHTML =
             '<div class="chat-msg-label">' + (role === 'user' ? 'Vous' : 'Assistant') + '</div>' +
             '<div class="chat-msg-bubble">' + escapeHtml(content) + '</div>';
@@ -58,14 +61,22 @@
 
     function escapeHtml(s) { const d = document.createElement('div'); d.textContent = s; return d.innerHTML; }
 
-    function setMicEnabled(on) {
-        const btn = $('btn-mic');
-        if (btn) btn.disabled = !on;
-    }
+    function updateButtons() {
+        const start = $('btn-start');
+        const mic = $('btn-mic');
+        const stop = $('btn-stop');
 
-    function setMicRecording(on) {
-        const btn = $('btn-mic');
-        if (btn) btn.classList.toggle('recording', on);
+        if (start) {
+            start.disabled = S.isConversationActive;
+            start.style.display = S.isConversationActive ? 'none' : '';
+        }
+        if (mic) {
+            mic.disabled = !S.isConversationActive || S.isProcessing || S.isSpeaking;
+        }
+        if (stop) {
+            stop.disabled = !S.isConversationActive;
+            stop.style.display = S.isConversationActive ? '' : 'none';
+        }
     }
 
     // ─── Speech Recognition ───────────────────────────────────
@@ -97,9 +108,11 @@
             console.warn('STT error:', e.error);
             stopRecording();
             if (e.error === 'no-speech' || e.error === 'aborted') {
-                setStatus('Appuyez pour parler', 'connected');
-                setVisualState('');
-                enableMicIfReady();
+                if (S.isConversationActive) {
+                    setStatus('Appuyez sur le micro', 'connected');
+                    setVisualState('');
+                    updateButtons();
+                }
             } else {
                 respond('Je n\'ai pas bien entendu. Pourriez-vous répéter ?');
             }
@@ -115,8 +128,9 @@
         try {
             S.isRecording = true;
             S.recognition.start();
-            setMicRecording(true);
-            setStatus('Écoute...', 'listening');
+            const btn = $('btn-mic');
+            if (btn) btn.classList.add('recording');
+            setStatus('Je vous écoute...', 'listening');
             setVisualState('listening');
             setTranscript('...', 'user');
         } catch (e) {
@@ -127,18 +141,19 @@
     function stopRecording() {
         S.isRecording = false;
         if (S.recognition) try { S.recognition.stop(); } catch (e) { }
-        setMicRecording(false);
+        const btn = $('btn-mic');
+        if (btn) btn.classList.remove('recording');
     }
 
     // ─── Chat API ─────────────────────────────────────────────
     async function processUserMessage(text) {
         if (!text || S.isProcessing) return;
         S.isProcessing = true;
-        setMicEnabled(false);
+        updateButtons();
 
         addChatMessage('user', text);
         setTranscript(text, 'user');
-        setStatus('Réflexion...', 'thinking');
+        setStatus('L\'assistant réfléchit...', 'thinking');
         setVisualState('thinking');
 
         try {
@@ -173,9 +188,9 @@
             if (fullText) {
                 await respond(fullText);
             } else {
-                setStatus('Appuyez pour parler', 'connected');
+                setStatus('Appuyez sur le micro', 'connected');
                 setVisualState('');
-                enableMicIfReady();
+                updateButtons();
             }
 
         } catch (err) {
@@ -184,23 +199,26 @@
         }
 
         S.isProcessing = false;
+        updateButtons();
     }
 
     async function respond(text) {
         addChatMessage('ai', text);
         setTranscript(text, 'ai');
-        setStatus('L\'assistant parle...', 'speaking');
+        setStatus('L\'avatar répond...', 'speaking');
         setVisualState('speaking');
         S.isSpeaking = true;
-        setMicEnabled(false);
+        updateButtons();
 
         await speakViaAnam(text);
 
         S.isSpeaking = false;
-        setStatus('Appuyez pour parler', 'connected');
-        setVisualState('');
-        setTranscript('', '');
-        enableMicIfReady();
+        if (S.isConversationActive) {
+            setStatus('Appuyez sur le micro', 'connected');
+            setVisualState('');
+            setTranscript('', '');
+        }
+        updateButtons();
     }
 
     async function speakViaAnam(text) {
@@ -240,31 +258,61 @@
         return 'fr-FR';
     }
 
-    function enableMicIfReady() {
-        if (S.anamReady && S.speechSupported && !S.isProcessing && !S.isSpeaking) {
-            setMicEnabled(true);
+    // ─── Conversation Start / Stop ────────────────────────────
+    async function startConversation() {
+        if (S.isConversationActive) return;
+        S.isConversationActive = true;
+        updateButtons();
+        setStatus('Connexion à l\'avatar...', 'loading');
+        await connectAnam();
+    }
+
+    function stopConversation() {
+        S.isConversationActive = false;
+        stopRecording();
+        stopAnam();
+
+        S.sessionId = null;
+        S.isProcessing = false;
+        S.isSpeaking = false;
+        if ('speechSynthesis' in window) speechSynthesis.cancel();
+
+        if (S.sessionId) {
+            fetch('/api/clear-session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sessionId: S.sessionId })
+            }).catch(() => { });
         }
+
+        const msgs = $('chat-messages');
+        if (msgs) msgs.innerHTML = '';
+
+        setVisualState('');
+        setTranscript('', '');
+        setStatus('Conversation terminée', '');
+        updateButtons();
     }
 
     // ─── Anam Avatar ──────────────────────────────────────────
     async function connectAnam() {
-        setStatus('Connexion avatar...', 'loading');
+        setStatus('Connexion à l\'avatar...', 'loading');
 
         try {
             const resp = await fetch('/api/session-token', { method: 'POST' });
             const data = await resp.json();
             if (data.error) throw new Error(data.error);
 
-            setStatus('Chargement avatar...', 'loading');
+            setStatus('Chargement de l\'avatar...', 'loading');
 
             const { createClient, AnamEvent } = await import(ANAM_SDK_URL);
             S.anamClient = createClient(data.sessionToken);
 
             S.anamClient.addListener(AnamEvent.SESSION_READY, function () {
                 S.anamReady = true;
-                setStatus('Appuyez pour parler', 'connected');
+                setStatus('Avatar connecté — Appuyez sur le micro', 'connected');
                 setVisualState('');
-                setMicEnabled(true);
+                updateButtons();
                 const v = $('avatar-video');
                 const p = $('avatar-placeholder');
                 if (v) v.classList.add('visible');
@@ -281,30 +329,34 @@
 
             S.anamClient.addListener(AnamEvent.MESSAGE_STREAM_EVENT_RECEIVED, function (evt) {
                 if (evt.role === 'user') {
-                    setStatus('Vous parlez...', 'listening');
+                    setStatus('Je vous écoute...', 'listening');
                     setVisualState('listening');
                 } else if (evt.role === 'persona') {
-                    setStatus('L\'assistant parle...', 'speaking');
+                    setStatus('L\'avatar répond...', 'speaking');
                     setVisualState('speaking');
                 }
             });
 
             S.anamClient.addListener(AnamEvent.TALK_STREAM_INTERRUPTED, function () {
-                if (S.anamReady && !S.isProcessing) {
-                    setStatus('Appuyez pour parler', 'connected');
+                if (S.anamReady && !S.isProcessing && S.isConversationActive) {
+                    setStatus('Avatar connecté — Appuyez sur le micro', 'connected');
                     setVisualState('');
                 }
             });
 
             S.anamClient.addListener(AnamEvent.CONNECTION_CLOSED, function () {
                 S.anamReady = false;
-                setStatus('Avatar déconnecté — reconnexion...', 'error');
-                setMicEnabled(false);
-                const v = $('avatar-video');
-                const p = $('avatar-placeholder');
-                if (v) { v.classList.remove('visible'); v.srcObject = null; }
-                if (p) p.classList.remove('hidden');
-                setTimeout(connectAnam, 3000);
+                if (S.isConversationActive) {
+                    setStatus('Avatar déconnecté — reconnexion...', 'error');
+                    updateButtons();
+                    const v = $('avatar-video');
+                    const p = $('avatar-placeholder');
+                    if (v) { v.classList.remove('visible'); v.srcObject = null; }
+                    if (p) p.classList.remove('hidden');
+                    setTimeout(function () {
+                        if (S.isConversationActive) connectAnam();
+                    }, 3000);
+                }
             });
 
             S.anamClient.addListener(AnamEvent.INPUT_AUDIO_STREAM_STARTED, function () {
@@ -315,8 +367,10 @@
 
         } catch (err) {
             console.error('Anam error:', err);
-            setStatus('Avatar indisponible — mode texte', 'connected');
-            setMicEnabled(S.speechSupported);
+            if (S.isConversationActive) {
+                setStatus('Avatar indisponible — mode texte', 'connected');
+                updateButtons();
+            }
         }
     }
 
@@ -329,30 +383,7 @@
         if (p) p.classList.remove('hidden');
     }
 
-    async function restart() {
-        stopAnam();
-        stopRecording();
-        S.sessionId = null;
-        S.isProcessing = false;
-        S.isSpeaking = false;
-        if ('speechSynthesis' in window) speechSynthesis.cancel();
-
-        fetch('/api/clear-session', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ sessionId: S.sessionId })
-        }).catch(() => { });
-
-        const msgs = $('chat-messages');
-        if (msgs) msgs.innerHTML = '';
-
-        setVisualState('');
-        setTranscript('', '');
-        setMicEnabled(false);
-        setStatus('Reconnexion...', 'loading');
-        await connectAnam();
-    }
-
+    // ─── Drawer ───────────────────────────────────────────────
     function toggleDrawer() {
         S.drawerOpen = !S.drawerOpen;
         const c = $('drawer-content');
@@ -362,17 +393,17 @@
     // ─── Init ─────────────────────────────────────────────────
     function init() {
         initSpeech();
-        setMicEnabled(false);
+        updateButtons();
+
+        $('btn-start')?.addEventListener('click', startConversation);
+        $('btn-stop')?.addEventListener('click', stopConversation);
 
         $('btn-mic')?.addEventListener('click', function () {
             if (S.isRecording) stopRecording();
             else startRecording();
         });
 
-        $('btn-restart')?.addEventListener('click', restart);
         $('drawer-toggle')?.addEventListener('click', toggleDrawer);
-
-        connectAnam();
     }
 
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);

@@ -10,7 +10,7 @@
     <div id="app">
         <div class="status-bar">
             <span class="status-dot" id="status-dot"></span>
-            <span id="status-text">Chargement...</span>
+            <span id="status-text">Prêt</span>
         </div>
 
         <div class="avatar-area">
@@ -35,7 +35,14 @@
         </div>
 
         <div class="controls-area">
-            <button class="btn-mic" id="btn-mic" title="Appuyez pour parler">
+            <button class="btn-start" id="btn-start" title="Démarrer la conversation">
+                <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2">
+                    <polygon points="5,3 19,12 5,21"/>
+                </svg>
+                <span>Démarrer la conversation</span>
+            </button>
+
+            <button class="btn-mic" id="btn-mic" title="Appuyez pour parler" disabled>
                 <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="9" y="1" width="6" height="12" rx="3"/>
                     <path d="M5 10a7 7 0 0014 0"/>
@@ -43,11 +50,12 @@
                     <line x1="8" y1="23" x2="16" y2="23"/>
                 </svg>
             </button>
-            <button class="btn-restart" id="btn-restart" title="Nouvelle conversation">
+
+            <button class="btn-stop" id="btn-stop" title="Terminer la conversation" disabled>
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="1,4 1,10 7,10"/>
-                    <path d="M3.51 15a9 9 0 105.64-12.36L1 10"/>
+                    <rect x="6" y="6" width="12" height="12" rx="2"/>
                 </svg>
+                <span>Terminer</span>
             </button>
         </div>
 
