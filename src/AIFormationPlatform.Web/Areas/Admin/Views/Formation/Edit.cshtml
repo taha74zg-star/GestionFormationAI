@@ -1,0 +1,64 @@
+@model AIFormationPlatform.Core.Entities.Formation
+
+@{
+    ViewData["Title"] = "Modifier formation";
+}
+
+<h1>Modifier formation</h1>
+
+<form asp-area="Admin" asp-controller="Formation" asp-action="Edit" method="post">
+    <input type="hidden" asp-for="Id" />
+
+    <div class="form-group">
+        <label asp-for="Titre"></label>
+        <input asp-for="Titre" class="form-control" />
+        <span asp-validation-for="Titre" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Description"></label>
+        <textarea asp-for="Description" class="form-control"></textarea>
+        <span asp-validation-for="Description" class="text-danger"></span>
+    </div>
+    <div class="form-group">
+        <label asp-for="Categorie"></label>
+        <input asp-for="Categorie" class="form-control" />
+    </div>
+    <div class="form-group">
+        <label asp-for="Niveau"></label>
+        <select asp-for="Niveau" class="form-control">
+            <option>Débutant</option>
+            <option>Intermédiaire</option>
+            <option>Avancé</option>
+        </select>
+    </div>
+    <div class="form-group">
+        <label asp-for="DureeEnMinutes">Durée (minutes)</label>
+        <input asp-for="DureeEnMinutes" class="form-control" />
+    </div>
+    <div class="form-group">
+        <label asp-for="ImageUrl">Image URL</label>
+        <input asp-for="ImageUrl" class="form-control" />
+    </div>
+    <div class="form-group">
+        <label asp-for="Contenu">Contenu</label>
+        <textarea asp-for="Contenu" class="form-control"></textarea>
+    </div>
+    <div class="form-group">
+        <label asp-for="Objectifs">Objectifs</label>
+        <textarea asp-for="Objectifs" class="form-control"></textarea>
+    </div>
+    <div class="form-group">
+        <label asp-for="Prerequis">Prérequis</label>
+        <textarea asp-for="Prerequis" class="form-control"></textarea>
+    </div>
+    <div class="form-group form-check">
+        <input asp-for="EstPubliee" class="form-check-input" />
+        <label asp-for="EstPubliee" class="form-check-label">Publiée</label>
+    </div>
+    <button type="submit" class="btn btn-primary">Enregistrer</button>
+    <a asp-area="Admin" asp-controller="Formation" asp-action="Index" class="btn btn-secondary">Annuler</a>
+</form>
+
+@section Scripts{
+    <partial name="_ValidationScriptsPartial" />
+}

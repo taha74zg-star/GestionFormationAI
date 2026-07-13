@@ -1,0 +1,23 @@
+@model AIFormationPlatform.Core.Entities.Formation
+
+@{
+    ViewData["Title"] = "Détails formation";
+}
+
+<h1>@Model.Titre</h1>
+<p><strong>Niveau :</strong> @Model.Niveau</p>
+<p><strong>Durée :</strong> @Model.DureeEnMinutes minutes</p>
+<p><strong>Catégorie :</strong> @Model.Categorie</p>
+@if (!string.IsNullOrEmpty(Model.ImageUrl))
+{
+    <img src="@Model.ImageUrl" alt="cover" style="max-width:300px" />
+}
+<h3>Description</h3>
+<p>@Model.Description</p>
+<h3>Contenu</h3>
+<p>@Model.Contenu</p>
+<h3>Objectifs</h3>
+<p>@Model.Objectifs</p>
+<h3>Prérequis</h3>
+<p>@Model.Prerequis</p>
+<p><a asp-area="Admin" asp-controller="Formation" asp-action="Index">Retour</a></p>

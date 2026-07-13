@@ -1,6 +1,6 @@
-using System.Net.Http.Headers;
-using System.Text;
 using System.Text.Json;
+using AIFormationPlatform.Core.Interfaces;
+using AIFormationPlatform.Infrastructure;
 using AIFormationPlatform.Web.Features.Chat;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -11,8 +11,14 @@ builder.WebHost.UseUrls($"http://*:{appPort}");
 builder.Services.AddSingleton<OpenAIProvider>();
 builder.Services.AddSingleton<IChatService, ChatService>();
 builder.Services.AddHttpClient();
+builder.Services.AddInfrastructure(builder.Configuration);
+
+// Add MVC support for Admin area (Razor views)
+builder.Services.AddControllersWithViews();
 
 var app = builder.Build();
+
+await app.Services.InitializeDatabaseAsync();
 
 app.UseStaticFiles();
 
@@ -23,9 +29,7 @@ app.MapPost("/api/chat", async (ChatRequest req, IChatService chatService, HttpC
 
     var sessionId = req.SessionId;
     if (string.IsNullOrEmpty(sessionId))
-    {
         sessionId = Guid.NewGuid().ToString("N");
-    }
 
     var history = ChatService.GetOrCreateSession(sessionId);
     ChatService.AddMessage(sessionId, "user", req.Message);
@@ -34,7 +38,7 @@ app.MapPost("/api/chat", async (ChatRequest req, IChatService chatService, HttpC
     http.Response.Headers.Append("Cache-Control", "no-cache");
     http.Response.Headers.Append("Connection", "keep-alive");
 
-    var sb = new StringBuilder();
+    var sb = new System.Text.StringBuilder();
     try
     {
         await foreach (var chunk in chatService.AskStreamingAsync(req.Message, history, http.RequestAborted))
@@ -57,52 +61,32 @@ app.MapPost("/api/chat", async (ChatRequest req, IChatService chatService, HttpC
     return Results.Empty;
 });
 
-app.MapPost("/api/session-token", async (IHttpClientFactory httpClientFactory, IConfiguration config) =>
+app.MapPost("/api/session-token", async (
+    IAvatarService avatarService,
+    AvatarTokenRequest? req,
+    CancellationToken cancellationToken) =>
 {
-    var anamApiKey = config["ANAM_API_KEY"];
-    if (string.IsNullOrEmpty(anamApiKey))
-        return Results.BadRequest(new { error = "Clé API Anam non configurée." });
+    AvatarPersonaConfig? persona = req is not null
+        ? new AvatarPersonaConfig(
+            req.PersonaName ?? string.Empty,
+            req.AvatarId ?? string.Empty,
+            req.AvatarModel ?? string.Empty,
+            req.VoiceId ?? string.Empty,
+            req.LlmId ?? string.Empty,
+            req.SystemPrompt ?? string.Empty)
+        : null;
 
-    try
+    // Use StartSessionAsync to allow providing a script/fallback
+    var script = req?.SystemPrompt ?? string.Empty;
+    var start = await avatarService.StartSessionAsync(script, persona, cancellationToken);
+
+    if (!start.Success)
     {
-        var client = httpClientFactory.CreateClient();
-        var payload = new
-        {
-            personaConfig = new
-            {
-                name = "Assistant IA",
-                avatarId = "ccf00c0e-7302-455b-ace2-057e0cf58127",
-                avatarModel = "cara-4",
-                voiceId = "8f80e347-4fc0-11f1-84b0-52bacf74fa75",
-                llmId = "CUSTOMER_CLIENT_V1",
-                systemPrompt = "Tu es un assistant IA intelligent et amical. Réponds toujours dans la langue de l'utilisateur."
-            }
-        };
-
-        var json = JsonSerializer.Serialize(payload);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-
-        var request = new HttpRequestMessage(HttpMethod.Post, "https://api.anam.ai/v1/auth/session-token")
-        {
-            Content = content
-        };
-        request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", anamApiKey);
-
-        var response = await client.SendAsync(request);
-        var responseJson = await response.Content.ReadAsStringAsync();
-
-        if (!response.IsSuccessStatusCode)
-            return Results.BadRequest(new { error = "Impossible de créer la session avatar." });
-
-        var tokenData = JsonSerializer.Deserialize<JsonElement>(responseJson);
-        var sessionToken = tokenData.GetProperty("sessionToken").GetString();
-
-        return Results.Json(new { sessionToken });
+        // Fallback: return fallback text so client can display text content
+        return Results.Json(new { sessionToken = (string?)null, fallback = start.FallbackText, error = start.ErrorMessage });
     }
-    catch
-    {
-        return Results.BadRequest(new { error = "Erreur de connexion au service avatar." });
-    }
+
+    return Results.Json(new { sessionToken = start.SessionToken });
 });
 
 app.MapPost("/api/clear-session", (ChatClearRequest req) =>
@@ -117,3 +101,11 @@ app.MapFallbackToFile("index.html");
 app.Run();
 
 public record ChatClearRequest(string SessionId);
+
+public record AvatarTokenRequest(
+    string? SystemPrompt = null,
+    string? PersonaName = null,
+    string? AvatarId = null,
+    string? AvatarModel = null,
+    string? VoiceId = null,
+    string? LlmId = null);

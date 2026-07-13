@@ -1,0 +1,39 @@
+@model IEnumerable<AIFormationPlatform.Core.Entities.Formation>
+
+@{
+    ViewData["Title"] = "Formations";
+}
+
+<h1>Formations</h1>
+<p>
+    <a asp-area="Admin" asp-controller="Formation" asp-action="Create" class="btn btn-primary">Nouvelle formation</a>
+</p>
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Titre</th>
+            <th>Niveau</th>
+            <th>Durée (min)</th>
+            <th>Publié</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach(var f in Model)
+    {
+        <tr>
+            <td>@f.Titre</td>
+            <td>@f.Niveau</td>
+            <td>@f.DureeEnMinutes</td>
+            <td>@(f.EstPubliee ? "Oui" : "Non")</td>
+            <td>
+                <a asp-area="Admin" asp-controller="Formation" asp-action="Edit" asp-route-id="@f.Id">Edit</a> |
+                <a asp-area="Admin" asp-controller="Formation" asp-action="Details" asp-route-id="@f.Id">Details</a> |
+                <form asp-area="Admin" asp-controller="Formation" asp-action="Delete" asp-route-id="@f.Id" method="post" style="display:inline">
+                    <button type="submit" class="btn btn-link">Delete</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
