@@ -10,8 +10,6 @@ namespace AIFormationPlatform.Web.Pages.Account;
 [AllowAnonymous]
 public class RegisterModel(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager) : PageModel
 {
-    private static readonly string[] AllowedRoles = ["Formateur", "Apprenant"];
-
     [BindProperty]
     public RegisterInput Input { get; set; } = new();
 
@@ -21,12 +19,6 @@ public class RegisterModel(UserManager<ApplicationUser> userManager, SignInManag
     {
         if (!ModelState.IsValid)
             return Page();
-
-        if (!AllowedRoles.Contains(Input.Role))
-        {
-            ModelState.AddModelError("Input.Role", "Le rôle sélectionné est invalide.");
-            return Page();
-        }
 
         var user = new ApplicationUser
         {
@@ -44,7 +36,7 @@ public class RegisterModel(UserManager<ApplicationUser> userManager, SignInManag
             return Page();
         }
 
-        var roleResult = await userManager.AddToRoleAsync(user, Input.Role);
+        var roleResult = await userManager.AddToRoleAsync(user, "Apprenant");
         if (!roleResult.Succeeded)
         {
             await userManager.DeleteAsync(user);
@@ -54,7 +46,7 @@ public class RegisterModel(UserManager<ApplicationUser> userManager, SignInManag
         }
 
         await signInManager.SignInAsync(user, isPersistent: false);
-        return LocalRedirect(Input.Role == "Formateur" ? "/Formateur" : "/Apprenant");
+        return LocalRedirect("/Apprenant");
     }
 
     public sealed class RegisterInput
@@ -74,7 +66,5 @@ public class RegisterModel(UserManager<ApplicationUser> userManager, SignInManag
         [Required, DataType(DataType.Password), Compare(nameof(Password))]
         public string ConfirmPassword { get; set; } = string.Empty;
 
-        [Required]
-        public string Role { get; set; } = "Apprenant";
     }
 }

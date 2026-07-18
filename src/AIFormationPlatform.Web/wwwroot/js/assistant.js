@@ -1,7 +1,7 @@
 (function () {
     'use strict';
 
-    const ANAM_SDK_URL = 'https://esm.sh/@anam-ai/js-sdk@latest';
+    const ANAM_SDK_URL = 'https://esm.sh/@anam-ai/js-sdk@4.8.0';
 
     const S = {
         sessionId: null,
@@ -17,6 +17,12 @@
     };
 
     const $ = (id) => document.getElementById(id);
+
+    function getModuleId() {
+        const configuredId = window.avatarModuleId ?? new URLSearchParams(window.location.search).get('moduleId');
+        const moduleId = Number(configuredId);
+        return Number.isInteger(moduleId) && moduleId > 0 ? moduleId : null;
+    }
 
     function setStatus(text, mode) {
         const dot = $('status-dot');
@@ -162,7 +168,11 @@
             const resp = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ sessionId: S.sessionId, message: text })
+                body: JSON.stringify({
+                    sessionId: S.sessionId,
+                    message: text,
+                    moduleId: getModuleId()
+                })
             });
 
             if (!resp.ok) throw new Error('API error');
@@ -299,8 +309,8 @@
         setStatus('Connexion à l\'avatar...', 'loading');
 
         try {
-            const moduleId = Number(window.avatarModuleId);
-            const sessionRequest = Number.isInteger(moduleId) && moduleId > 0
+            const moduleId = getModuleId();
+            const sessionRequest = moduleId !== null
                 ? {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -308,8 +318,10 @@
                 }
                 : { method: 'POST' };
             const resp = await fetch('/api/session-token', sessionRequest);
-            const data = await resp.json();
-            if (data.error) throw new Error(data.error);
+            const data = await resp.json().catch(function () { return {}; });
+            if (!resp.ok || !data.sessionToken) {
+                throw new Error(data.error || 'Impossible de créer la session avatar.');
+            }
 
             setStatus('Chargement de l\'avatar...', 'loading');
 
@@ -321,6 +333,9 @@
                 setStatus('Avatar connecté — Appuyez sur le micro', 'connected');
                 setVisualState('');
                 updateButtons();
+            });
+
+            S.anamClient.addListener(AnamEvent.VIDEO_PLAY_STARTED, function () {
                 const v = $('avatar-video');
                 const p = $('avatar-placeholder');
                 if (v) v.classList.add('visible');
@@ -376,7 +391,8 @@
         } catch (err) {
             console.error('Anam error:', err);
             if (S.isConversationActive) {
-                setStatus('Avatar indisponible — mode texte', 'connected');
+                const detail = err instanceof Error ? err.message : 'Erreur de connexion Anam.';
+                setStatus('Avatar indisponible : ' + detail, 'error');
                 updateButtons();
             }
         }

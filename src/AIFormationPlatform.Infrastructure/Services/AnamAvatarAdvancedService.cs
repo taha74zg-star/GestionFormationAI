@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
@@ -29,12 +30,16 @@ public class AnamAvatarAdvancedService : IAvatarService
         _logger = logger;
     }
 
-    public bool IsConfigured => !string.IsNullOrWhiteSpace(_options.ApiKey);
+    public bool IsConfigured =>
+        !string.IsNullOrWhiteSpace(_options.ApiKey) &&
+        !string.IsNullOrWhiteSpace(_options.AvatarId) &&
+        !string.IsNullOrWhiteSpace(_options.VoiceId) &&
+        !string.IsNullOrWhiteSpace(_options.LlmId);
 
     public async Task<AvatarSessionResult> CreateSessionTokenAsync(AvatarPersonaConfig? personaOverride = null, CancellationToken cancellationToken = default)
     {
         if (!IsConfigured)
-            return new AvatarSessionResult(false, null, "Clé API Anam non configurée.");
+            return new AvatarSessionResult(false, null, "Configuration Anam incomplète : vérifiez la clé API et les identifiants avatar, voix et LLM.");
 
         var persona = MergePersona(personaOverride);
         try
@@ -46,7 +51,6 @@ public class AnamAvatarAdvancedService : IAvatarService
                 {
                     name = persona.Name,
                     avatarId = persona.AvatarId,
-                    avatarModel = persona.AvatarModel,
                     voiceId = persona.VoiceId,
                     llmId = persona.LlmId,
                     systemPrompt = persona.SystemPrompt
@@ -70,7 +74,15 @@ public class AnamAvatarAdvancedService : IAvatarService
             if (!response.IsSuccessStatusCode)
             {
                 _logger.LogWarning("Anam session-token failed: {Status} {Body}", response.StatusCode, responseJson);
-                return new AvatarSessionResult(false, null, "Impossible de créer la session avatar.");
+                var errorMessage = response.StatusCode switch
+                {
+                    HttpStatusCode.Unauthorized => "Clé API Anam invalide ou expirée.",
+                    HttpStatusCode.Forbidden => "La clé API Anam n'a pas les permissions requises.",
+                    HttpStatusCode.NotFound => "Avatar, voix ou LLM Anam introuvable.",
+                    HttpStatusCode.TooManyRequests => "Limite de sessions Anam atteinte. Réessayez plus tard.",
+                    _ => $"Anam refuse la session ({(int)response.StatusCode})."
+                };
+                return new AvatarSessionResult(false, null, errorMessage);
             }
 
             var tokenData = JsonSerializer.Deserialize<JsonElement>(responseJson);

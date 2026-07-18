@@ -14,29 +14,31 @@ src/
 ## Prérequis
 
 - [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- [Docker](https://www.docker.com/) (optionnel, pour SQL Server local)
+- [Docker](https://www.docker.com/) (optionnel, pour PostgreSQL local)
 - Clés API : **OpenAI** (chat texte) et **Anam.ai** (avatar vocal)
 
-## Démarrage rapide (sans base de données)
+## Démarrage rapide
 
-L'application fonctionne **sans SQL Server** pour la démo avatar existante :
+Lancez PostgreSQL, puis configurez les variables requises :
 
 ```powershell
+docker compose up -d postgres
 cd src/AIFormationPlatform.Web
+$env:PORT = "8080"
+$env:ConnectionStrings__DefaultConnection = "Host=localhost;Port=5432;Database=AIFormationPlatform;Username=postgres;Password=YourStrongPassword"
 $env:OPENAI_API_KEY = "sk-..."
 $env:ANAM_API_KEY = "..."
 dotnet run
 ```
 
-Ouvrir http://localhost:5000
+Ouvrir http://localhost:8080
 
-## Démarrage avec SQL Server
+## Démarrage avec PostgreSQL
 
-1. Lancer SQL Server :
+1. Lancer PostgreSQL :
 
 ```powershell
-# Utilisez une image SQL Server via Docker (exemple)
-docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=YourStrong@Passw0rd" -p 1433:1433 -d mcr.microsoft.com/mssql/server:2022-latest
+docker compose up -d postgres
 ```
 
 2. Configurer la connexion (copier `.env.example` ou créer `appsettings.Development.json`) :
@@ -44,7 +46,7 @@ docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=YourStrong@Passw0rd" -p 1433:1433 
 ```json
 {
   "ConnectionStrings": {
-    "DefaultConnection": "Server=localhost,1433;Database=AIFormationPlatform;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;MultipleActiveResultSets=true"
+    "DefaultConnection": "Host=localhost;Port=5432;Database=AIFormationPlatform;Username=postgres;Password=YourStrongPassword"
   }
 }
 ```
@@ -65,7 +67,7 @@ dotnet run --project src/AIFormationPlatform.Web
 
 | Variable | Description |
 |----------|-------------|
-| `ConnectionStrings__DefaultConnection` | Chaîne SQL Server |
+| `ConnectionStrings__DefaultConnection` | Chaîne PostgreSQL |
 | `OPENAI_API_KEY` | Clé API OpenAI (chat) |
 | `ANAM_API_KEY` | Clé API Anam.ai |
 | `ANAM_AVATAR_ID` | ID de l'avatar Anam |
@@ -86,7 +88,7 @@ Voir [.env.example](.env.example) pour la liste complète.
 
 ## Déploiement Railway
 
-1. Créer un service **SQL Server** (ou Azure SQL) et renseigner `ConnectionStrings__DefaultConnection`
+1. Créer un service **PostgreSQL** et renseigner `ConnectionStrings__DefaultConnection`
 2. Ajouter les variables `OPENAI_API_KEY`, `ANAM_API_KEY`, etc.
 3. Railway détecte le `Dockerfile` à la racine
 
@@ -95,7 +97,7 @@ docker build -t ai-formation-platform .
 # Exemple de run local (Railway utilisera sa propre image/variables)
 docker run -p 8080:8080 \
   -e PORT=8080 \
-  -e ConnectionStrings__DefaultConnection="Server=host.docker.internal,1433;Database=AIFormationPlatform;User Id=sa;Password=YourStrong@Passw0rd;TrustServerCertificate=True;" \
+  -e ConnectionStrings__DefaultConnection="Host=host.docker.internal;Port=5432;Database=AIFormationPlatform;Username=postgres;Password=YourStrongPassword" \
   -e ANAM_API_KEY=... \
   -e OPENAI_API_KEY=... \
   ai-formation-platform

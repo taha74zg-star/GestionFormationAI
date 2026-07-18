@@ -7,7 +7,7 @@ public class ChatService : IChatService
     private readonly OpenAIProvider _openAi;
     private readonly ILogger<ChatService> _logger;
 
-    private static readonly ConcurrentDictionary<string, List<(string Role, string Content)>> _sessions = new();
+    private static readonly ConcurrentDictionary<string, SessionState> _sessions = new();
 
     public ChatService(OpenAIProvider openAi, ILogger<ChatService> logger)
     {
@@ -15,14 +15,14 @@ public class ChatService : IChatService
         _logger = logger;
     }
 
-    public async Task<string> AskAsync(string message, List<(string Role, string Content)> history, CancellationToken ct = default)
+    public async Task<string> AskAsync(string message, List<(string Role, string Content)> history, string? systemPrompt = null, CancellationToken ct = default)
     {
-        return await _openAi.GenerateAsync(ChatPrompts.SystemPrompt, history, ct);
+        return await _openAi.GenerateAsync(systemPrompt ?? ChatPrompts.SystemPrompt, history, ct);
     }
 
-    public async IAsyncEnumerable<string> AskStreamingAsync(string message, List<(string Role, string Content)> history, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
+    public async IAsyncEnumerable<string> AskStreamingAsync(string message, List<(string Role, string Content)> history, string? systemPrompt = null, [System.Runtime.CompilerServices.EnumeratorCancellation] CancellationToken ct = default)
     {
-        await foreach (var chunk in _openAi.GenerateStreamingAsync(ChatPrompts.SystemPrompt, history, ct))
+        await foreach (var chunk in _openAi.GenerateStreamingAsync(systemPrompt ?? ChatPrompts.SystemPrompt, history, ct))
         {
             yield return chunk;
         }
@@ -30,7 +30,10 @@ public class ChatService : IChatService
 
     public static List<(string Role, string Content)> GetOrCreateSession(string sessionId)
     {
-        return _sessions.GetOrAdd(sessionId, _ => new List<(string, string)>());
+        CleanupOldSessions();
+        var state = _sessions.GetOrAdd(sessionId, _ => new SessionState());
+        state.LastActivityUtc = DateTime.UtcNow;
+        return state.Messages;
     }
 
     public static void AddMessage(string sessionId, string role, string content)
@@ -49,13 +52,17 @@ public class ChatService : IChatService
 
     public static void CleanupOldSessions()
     {
-        var cutoff = DateTime.UtcNow.AddHours(2);
-        foreach (var key in _sessions.Keys)
+        var cutoff = DateTime.UtcNow.AddHours(-2);
+        foreach (var (key, state) in _sessions)
         {
-            if (_sessions.TryGetValue(key, out var messages) && messages.Count == 0)
-            {
+            if (state.LastActivityUtc < cutoff)
                 _sessions.TryRemove(key, out _);
-            }
         }
+    }
+
+    private sealed class SessionState
+    {
+        public List<(string Role, string Content)> Messages { get; } = new();
+        public DateTime LastActivityUtc { get; set; } = DateTime.UtcNow;
     }
 }

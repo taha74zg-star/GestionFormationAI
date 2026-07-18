@@ -7,4 +7,9 @@
     <article>@Model.Module.ContenuTexte</article>
 }
 <p>L'avatar de formation reçoit le contexte de ce module lorsqu'une session est ouverte depuis cette page.</p>
-<script>window.avatarModuleId = @Model.Module.Id;</script>
+<iframe
+    src="/?moduleId=@Model.Module.Id"
+    title="Avatar IA du module @Model.Module.Titre"
+    style="display:block;width:100%;height:720px;border:0;border-radius:16px"
+    allow="microphone; autoplay">
+</iframe>

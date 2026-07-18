@@ -66,6 +66,19 @@ app.MapPost("/api/chat", async (ChatRequest req, IChatService chatService, HttpC
     if (string.IsNullOrWhiteSpace(req.Message))
         return Results.BadRequest(new { error = "Message requis." });
 
+    string? modulePrompt = null;
+    if (req.ModuleId is not null)
+    {
+        var contextResult = await GetModuleContextAsync(
+            http.RequestServices.GetRequiredService<ApplicationDbContext>(),
+            http.User,
+            req.ModuleId.Value,
+            http.RequestAborted);
+        if (contextResult.Error is not null)
+            return contextResult.Error;
+        modulePrompt = contextResult.Prompt;
+    }
+
     var sessionId = req.SessionId;
     if (string.IsNullOrEmpty(sessionId))
         sessionId = Guid.NewGuid().ToString("N");
@@ -80,7 +93,7 @@ app.MapPost("/api/chat", async (ChatRequest req, IChatService chatService, HttpC
     var sb = new System.Text.StringBuilder();
     try
     {
-        await foreach (var chunk in chatService.AskStreamingAsync(req.Message, history, http.RequestAborted))
+        await foreach (var chunk in chatService.AskStreamingAsync(req.Message, history, modulePrompt, http.RequestAborted))
         {
             sb.Append(chunk);
             var data = JsonSerializer.Serialize(new { content = chunk, sessionId });
@@ -98,7 +111,7 @@ app.MapPost("/api/chat", async (ChatRequest req, IChatService chatService, HttpC
     await http.Response.Body.FlushAsync();
 
     return Results.Empty;
-});
+}).RequireAuthorization();
 
 app.MapPost("/api/session-token", async (
     IAvatarService avatarService,
@@ -107,65 +120,40 @@ app.MapPost("/api/session-token", async (
     AvatarTokenRequest? req,
     CancellationToken cancellationToken) =>
 {
+    string? modulePrompt = null;
     if (req?.ModuleId is not null)
     {
-        if (user.Identity?.IsAuthenticated != true || !user.IsInRole("Apprenant"))
-            return Results.Forbid();
-
-        var apprenantId = user.FindFirstValue(ClaimTypes.NameIdentifier);
-        var module = await dbContext.Modules
-            .Where(m => m.Id == req.ModuleId.Value)
-            .Select(m => new { m.Id, m.FormationId, m.Titre, m.ContenuTexte })
-            .SingleOrDefaultAsync(cancellationToken);
-        if (module is null)
-            return Results.NotFound();
-
-        var estInscrit = await dbContext.Inscriptions.AnyAsync(
-            i => i.ApprenantId == apprenantId && i.FormationId == module.FormationId,
-            cancellationToken);
-        if (!estInscrit)
-            return Results.Forbid();
-
-        var contexteModule = $"""
-            Tu présentes le module suivant et réponds uniquement aux questions qui concernent son contenu.
-
-            Titre du module : {module.Titre}
-
-            Contenu du cours :
-            {module.ContenuTexte ?? "Aucun contenu texte n'est disponible pour ce module."}
-            """;
-        req = req with { SystemPrompt = contexteModule };
+        var contextResult = await GetModuleContextAsync(dbContext, user, req.ModuleId.Value, cancellationToken);
+        if (contextResult.Error is not null)
+            return contextResult.Error;
+        modulePrompt = contextResult.Prompt;
     }
 
-    AvatarPersonaConfig? persona = req is not null
-        ? new AvatarPersonaConfig(
-            req.PersonaName ?? string.Empty,
-            req.AvatarId ?? string.Empty,
-            req.AvatarModel ?? string.Empty,
-            req.VoiceId ?? string.Empty,
-            req.LlmId ?? string.Empty,
-            req.SystemPrompt ?? string.Empty)
-        : null;
+    var script = modulePrompt ?? string.Empty;
+    AvatarPersonaConfig? persona = string.IsNullOrWhiteSpace(script)
+        ? null
+        : new AvatarPersonaConfig(string.Empty, string.Empty, string.Empty, string.Empty, string.Empty, script);
 
     // Use StartSessionAsync to allow providing a script/fallback
-    var script = req?.SystemPrompt ?? string.Empty;
     var start = await avatarService.StartSessionAsync(script, persona, cancellationToken);
 
     if (!start.Success)
     {
         // Fallback: return fallback text so client can display text content
-        return Results.Json(new { sessionToken = (string?)null, fallback = start.FallbackText, error = start.ErrorMessage });
+        return Results.Json(
+            new { sessionToken = (string?)null, fallback = start.FallbackText, error = start.ErrorMessage },
+            statusCode: StatusCodes.Status503ServiceUnavailable);
     }
 
     return Results.Json(new { sessionToken = start.SessionToken });
-});
+}).RequireAuthorization();
 
 app.MapPost("/api/clear-session", (ChatClearRequest req) =>
 {
     if (!string.IsNullOrEmpty(req.SessionId))
         ChatService.ClearSession(req.SessionId);
     return Results.Ok(new { cleared = true });
-});
+}).RequireAuthorization();
 
 app.MapRazorPages();
 app.MapControllers();
@@ -173,13 +161,40 @@ app.MapFallbackToFile("index.html");
 
 app.Run();
 
+static async Task<(string? Prompt, IResult? Error)> GetModuleContextAsync(
+    ApplicationDbContext dbContext,
+    ClaimsPrincipal user,
+    int moduleId,
+    CancellationToken cancellationToken)
+{
+    if (!user.IsInRole("Apprenant"))
+        return (null, Results.Forbid());
+
+    var apprenantId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+    var module = await dbContext.Modules
+        .Where(m => m.Id == moduleId)
+        .Select(m => new { m.FormationId, m.Titre, m.ContenuTexte })
+        .SingleOrDefaultAsync(cancellationToken);
+    if (module is null)
+        return (null, Results.NotFound());
+
+    var estInscrit = await dbContext.Inscriptions.AnyAsync(
+        i => i.ApprenantId == apprenantId && i.FormationId == module.FormationId,
+        cancellationToken);
+    if (!estInscrit)
+        return (null, Results.Forbid());
+
+    var prompt = $"""
+        Tu présentes le module suivant et réponds uniquement aux questions qui concernent son contenu.
+
+        Titre du module : {module.Titre}
+
+        Contenu du cours :
+        {module.ContenuTexte ?? "Aucun contenu texte n'est disponible pour ce module."}
+        """;
+    return (prompt, null);
+}
+
 public record ChatClearRequest(string SessionId);
 
-public record AvatarTokenRequest(
-    string? SystemPrompt = null,
-    string? PersonaName = null,
-    string? AvatarId = null,
-    string? AvatarModel = null,
-    string? VoiceId = null,
-    string? LlmId = null,
-    int? ModuleId = null);
+public record AvatarTokenRequest(int? ModuleId = null);
