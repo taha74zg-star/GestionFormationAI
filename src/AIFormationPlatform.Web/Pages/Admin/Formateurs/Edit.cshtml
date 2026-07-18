@@ -1,0 +1,15 @@
+@page "{id:int}"
+@model AIFormationPlatform.Web.Pages.Admin.Formateurs.EditModel
+<h1>Modifier le formateur</h1>
+<form method="post">
+    <div asp-validation-summary="ModelOnly"></div>
+    <input type="hidden" asp-for="Formateur.Id" />
+    <p><label asp-for="Formateur.Prenom"></label><input asp-for="Formateur.Prenom" /><span asp-validation-for="Formateur.Prenom"></span></p>
+    <p><label asp-for="Formateur.Nom"></label><input asp-for="Formateur.Nom" /><span asp-validation-for="Formateur.Nom"></span></p>
+    <p><label asp-for="Formateur.UserId">Identifiant utilisateur</label><input asp-for="Formateur.UserId" /></p>
+    <p><label asp-for="Formateur.Bio"></label><textarea asp-for="Formateur.Bio"></textarea></p>
+    <p><label asp-for="Formateur.Specialites"></label><input asp-for="Formateur.Specialites" /></p>
+    <p><label asp-for="Formateur.PhotoUrl"></label><input asp-for="Formateur.PhotoUrl" type="url" /></p>
+    <p><label><input asp-for="Formateur.EstActif" /> Actif</label></p>
+    <button type="submit">Enregistrer</button> <a asp-page="Index">Annuler</a>
+</form>

@@ -27,7 +27,19 @@ public class AnamAvatarService : IAvatarService
     // Implémentations par défaut pour la compatibilité avec la nouvelle interface
     public async Task<AvatarStartResult> StartSessionAsync(string script, AvatarPersonaConfig? personaOverride = null, CancellationToken cancellationToken = default)
     {
-        var session = await CreateSessionTokenAsync(personaOverride, cancellationToken);
+        var persona = MergePersona(personaOverride);
+        if (!string.IsNullOrWhiteSpace(script))
+        {
+            var defaultPrompt = BuildDefaultPersona().SystemPrompt;
+            persona = persona with
+            {
+                SystemPrompt = string.IsNullOrWhiteSpace(defaultPrompt)
+                    ? script
+                    : $"{defaultPrompt}\n\n{script}"
+            };
+        }
+
+        var session = await CreateSessionTokenAsync(persona, cancellationToken);
         if (!session.Success)
             return new AvatarStartResult(false, null, script, session.ErrorMessage);
 

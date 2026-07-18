@@ -1,0 +1,8 @@
+@page "{id:int}"
+@model AIFormationPlatform.Web.Pages.Admin.Categories.DeleteModel
+<h1>Supprimer la catégorie</h1>
+<p>Confirmez-vous la suppression de <strong>@Model.Categorie.Nom</strong> ?</p>
+<form method="post">
+    <input type="hidden" asp-for="Categorie.Id" />
+    <button type="submit">Supprimer</button> <a asp-page="Index">Annuler</a>
+</form>

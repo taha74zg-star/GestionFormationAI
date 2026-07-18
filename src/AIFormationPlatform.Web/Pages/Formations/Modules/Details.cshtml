@@ -1,0 +1,10 @@
+@page "/Formations/{formationId:int}/Modules/{id:int}"
+@model AIFormationPlatform.Web.Pages.Formations.Modules.DetailsModel
+<h1>@Model.Module.Titre</h1>
+<p>@Model.Module.Description</p>
+@if (!string.IsNullOrWhiteSpace(Model.Module.ContenuTexte))
+{
+    <article>@Model.Module.ContenuTexte</article>
+}
+<p>L'avatar de formation reçoit le contexte de ce module lorsqu'une session est ouverte depuis cette page.</p>
+<script>window.avatarModuleId = @Model.Module.Id;</script>

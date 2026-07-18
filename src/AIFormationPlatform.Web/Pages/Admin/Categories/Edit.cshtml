@@ -1,0 +1,12 @@
+@page "{id:int}"
+@model AIFormationPlatform.Web.Pages.Admin.Categories.EditModel
+<h1>Modifier la catégorie</h1>
+<form method="post">
+    <div asp-validation-summary="ModelOnly"></div>
+    <input type="hidden" asp-for="Categorie.Id" />
+    <p><label asp-for="Categorie.Nom"></label><input asp-for="Categorie.Nom" /><span asp-validation-for="Categorie.Nom"></span></p>
+    <p><label asp-for="Categorie.Description"></label><textarea asp-for="Categorie.Description"></textarea></p>
+    <p><label asp-for="Categorie.ParentId">Catégorie parente</label><select asp-for="Categorie.ParentId" asp-items="Model.Parents"><option value="">Aucune</option></select></p>
+    <p><label asp-for="Categorie.Ordre"></label><input asp-for="Categorie.Ordre" /></p>
+    <button type="submit">Enregistrer</button> <a asp-page="Index">Annuler</a>
+</form>

@@ -1,0 +1,19 @@
+@page
+@model AIFormationPlatform.Web.Pages.Account.LoginModel
+@{
+    ViewData["Title"] = "Connexion";
+}
+
+<h1>Connexion</h1>
+
+<form method="post">
+    <div asp-validation-summary="ModelOnly"></div>
+    <input asp-for="Input.Email" placeholder="Adresse e-mail" autocomplete="email" />
+    <span asp-validation-for="Input.Email"></span>
+    <input asp-for="Input.Password" placeholder="Mot de passe" autocomplete="current-password" />
+    <span asp-validation-for="Input.Password"></span>
+    <label><input asp-for="Input.RememberMe" /> Se souvenir de moi</label>
+    <button type="submit">Se connecter</button>
+</form>
+
+<p><a asp-page="Register">Créer un compte</a></p>

@@ -1,0 +1,8 @@
+@page "{id:int}"
+@model AIFormationPlatform.Web.Pages.Admin.Formateurs.DetailsModel
+<h1>@Model.Formateur.Prenom @Model.Formateur.Nom</h1>
+<dl>
+    <dt>Spécialités</dt><dd>@Model.Formateur.Specialites</dd><dt>Biographie</dt><dd>@Model.Formateur.Bio</dd>
+    <dt>Identifiant utilisateur</dt><dd>@Model.Formateur.UserId</dd><dt>Actif</dt><dd>@Model.Formateur.EstActif</dd>
+</dl>
+<a asp-page="Edit" asp-route-id="@Model.Formateur.Id">Modifier</a> | <a asp-page="Index">Retour</a>

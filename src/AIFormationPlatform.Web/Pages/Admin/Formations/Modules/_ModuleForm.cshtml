@@ -1,0 +1,27 @@
+@model AIFormationPlatform.Web.Pages.Admin.Formations.Modules.ModuleFormData
+@using AIFormationPlatform.Core.Enums
+<form method="post">
+    <div asp-validation-summary="ModelOnly"></div>
+    <p><label asp-for="Titre"></label><input asp-for="Titre" /><span asp-validation-for="Titre"></span></p>
+    <p><label asp-for="Description"></label><textarea asp-for="Description"></textarea></p>
+    <p><label asp-for="Ordre"></label><input asp-for="Ordre" /></p>
+    <p><label asp-for="TypeModalite">Modalité</label><select asp-for="TypeModalite" asp-items="Html.GetEnumSelectList<TypeModalite>()"></select></p>
+
+    <fieldset><legend>Cours</legend><p><label asp-for="ContenuTexte">Contenu texte</label><textarea asp-for="ContenuTexte"></textarea></p></fieldset>
+    <fieldset><legend>Exercice</legend><p><label asp-for="EnonceExercice">Énoncé</label><textarea asp-for="EnonceExercice"></textarea></p><p><label asp-for="ConsignesExercice">Consignes</label><textarea asp-for="ConsignesExercice"></textarea></p></fieldset>
+    <fieldset><legend>Quiz</legend>
+        <p><label asp-for="TitreQuiz">Titre du quiz</label><input asp-for="TitreQuiz" /></p>
+        @for (var questionIndex = 0; questionIndex < Model.Questions.Count; questionIndex++)
+        {
+            <fieldset><legend>Question @(questionIndex + 1)</legend>
+                <p><label asp-for="Questions[questionIndex].Enonce">Énoncé</label><input asp-for="Questions[questionIndex].Enonce" /></p>
+                <p><label asp-for="Questions[questionIndex].Points"></label><input asp-for="Questions[questionIndex].Points" /></p>
+                @for (var reponseIndex = 0; reponseIndex < Model.Questions[questionIndex].Reponses.Count; reponseIndex++)
+                {
+                    <p><input asp-for="Questions[questionIndex].Reponses[reponseIndex].Texte" placeholder="Réponse @(reponseIndex + 1)" /> <label><input asp-for="Questions[questionIndex].Reponses[reponseIndex].EstCorrecte" /> Correcte</label></p>
+                }
+            </fieldset>
+        }
+    </fieldset>
+    <button type="submit">Enregistrer</button> <a href="../">Annuler</a>
+</form>

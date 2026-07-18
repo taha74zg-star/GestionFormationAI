@@ -1,0 +1,16 @@
+@page "/Admin/Formations/{formationId:int}/Modules"
+@model AIFormationPlatform.Web.Pages.Admin.Formations.Modules.IndexModel
+<h1>Modules — @Model.Formation.Titre</h1>
+<p><a asp-page="Create" asp-route-formationId="@Model.Formation.Id">Créer un module</a> · <a href="/Admin">Administration</a></p>
+<table>
+    <thead><tr><th>Ordre</th><th>Titre</th><th>Modalité</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var module in Model.Modules)
+    {
+        <tr><td>@module.Ordre</td><td>@module.Titre</td><td>@module.TypeModalite</td>
+            <td><a asp-page="Details" asp-route-formationId="@Model.Formation.Id" asp-route-id="@module.Id">Détails</a> |
+                <a asp-page="Edit" asp-route-formationId="@Model.Formation.Id" asp-route-id="@module.Id">Modifier</a> |
+                <a asp-page="Delete" asp-route-formationId="@Model.Formation.Id" asp-route-id="@module.Id">Supprimer</a></td></tr>
+    }
+    </tbody>
+</table>

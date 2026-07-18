@@ -1,3 +1,5 @@
+using AIFormationPlatform.Core.Enums;
+
 namespace AIFormationPlatform.Core.Entities;
 
 public class Module
@@ -8,6 +10,8 @@ public class Module
     public string? Description { get; set; }
     public int Ordre { get; set; }
     public string? ScriptAvatar { get; set; }
+    public TypeModalite TypeModalite { get; set; } = TypeModalite.Cours;
+    public string? ContenuTexte { get; set; }
 
     public Formation Formation { get; set; } = null!;
     public ICollection<ContenuCours> Contenus { get; set; } = [];

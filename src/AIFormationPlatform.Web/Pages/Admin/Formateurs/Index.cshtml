@@ -1,0 +1,14 @@
+@page
+@model AIFormationPlatform.Web.Pages.Admin.Formateurs.IndexModel
+<h1>Formateurs</h1>
+<p><a asp-page="Create">Créer un formateur</a> · <a href="/Admin">Administration</a></p>
+<table>
+    <thead><tr><th>Nom</th><th>Spécialités</th><th>Actif</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var formateur in Model.Formateurs)
+    {
+        <tr><td>@formateur.Prenom @formateur.Nom</td><td>@formateur.Specialites</td><td>@formateur.EstActif</td>
+            <td><a asp-page="Details" asp-route-id="@formateur.Id">Détails</a> | <a asp-page="Edit" asp-route-id="@formateur.Id">Modifier</a> | <a asp-page="Delete" asp-route-id="@formateur.Id">Supprimer</a></td></tr>
+    }
+    </tbody>
+</table>

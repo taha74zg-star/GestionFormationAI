@@ -178,7 +178,7 @@ namespace AIFormationPlatform.Infrastructure.Migrations
                     b.Property<DateTime>("DateCreation")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("timestamp with time zone")
-                        .HasDefaultValueSql("GETUTCDATE()");
+                        .HasDefaultValueSql("CURRENT_TIMESTAMP");
 
                     b.Property<DateTime?>("DateModification")
                         .HasColumnType("timestamp with time zone");
@@ -234,6 +234,10 @@ namespace AIFormationPlatform.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("ApprenantId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("DateInscription")
                         .HasColumnType("timestamp with time zone");
 
@@ -243,15 +247,11 @@ namespace AIFormationPlatform.Infrastructure.Migrations
                     b.Property<int>("Statut")
                         .HasColumnType("integer");
 
-                    b.Property<string>("UserId")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.HasKey("Id");
 
                     b.HasIndex("FormationId");
 
-                    b.HasIndex("UserId", "FormationId")
+                    b.HasIndex("ApprenantId", "FormationId")
                         .IsUnique();
 
                     b.ToTable("Inscriptions");
@@ -264,6 +264,9 @@ namespace AIFormationPlatform.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ContenuTexte")
+                        .HasColumnType("text");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
@@ -281,6 +284,9 @@ namespace AIFormationPlatform.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
+
+                    b.Property<int>("TypeModalite")
+                        .HasColumnType("integer");
 
                     b.HasKey("Id");
 

@@ -1,0 +1,27 @@
+@page
+@model AIFormationPlatform.Web.Pages.Account.RegisterModel
+@{
+    ViewData["Title"] = "Inscription";
+}
+
+<h1>Créer un compte</h1>
+
+<form method="post">
+    <div asp-validation-summary="ModelOnly"></div>
+    <input asp-for="Input.Prenom" placeholder="Prénom" autocomplete="given-name" />
+    <input asp-for="Input.Nom" placeholder="Nom" autocomplete="family-name" />
+    <input asp-for="Input.Email" placeholder="Adresse e-mail" autocomplete="email" />
+    <span asp-validation-for="Input.Email"></span>
+    <input asp-for="Input.Password" placeholder="Mot de passe" autocomplete="new-password" />
+    <span asp-validation-for="Input.Password"></span>
+    <input asp-for="Input.ConfirmPassword" placeholder="Confirmer le mot de passe" autocomplete="new-password" />
+    <span asp-validation-for="Input.ConfirmPassword"></span>
+    <label asp-for="Input.Role"></label>
+    <select asp-for="Input.Role">
+        <option value="Apprenant">Apprenant</option>
+        <option value="Formateur">Formateur</option>
+    </select>
+    <button type="submit">S'inscrire</button>
+</form>
+
+<p><a asp-page="Login">Déjà inscrit ? Se connecter</a></p>

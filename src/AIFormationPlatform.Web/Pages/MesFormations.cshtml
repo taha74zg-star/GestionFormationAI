@@ -1,0 +1,19 @@
+@page "/MesFormations"
+@model AIFormationPlatform.Web.Pages.MesFormationsModel
+<h1>Mes formations</h1>
+@if (Model.Inscriptions.Count == 0)
+{
+    <p>Vous n'êtes inscrit à aucune formation.</p>
+}
+else
+{
+    <table>
+        <thead><tr><th>Formation</th><th>Niveau</th><th>Inscrit le</th><th>Statut</th></tr></thead>
+        <tbody>
+        @foreach (var inscription in Model.Inscriptions)
+        {
+            <tr><td>@inscription.Formation.Titre</td><td>@inscription.Formation.Niveau</td><td>@inscription.DateInscription.ToLocalTime().ToString("d")</td><td>@inscription.Statut</td></tr>
+        }
+        </tbody>
+    </table>
+}

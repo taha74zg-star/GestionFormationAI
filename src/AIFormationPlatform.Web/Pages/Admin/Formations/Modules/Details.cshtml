@@ -1,0 +1,23 @@
+@page "/Admin/Formations/{formationId:int}/Modules/{id:int}"
+@model AIFormationPlatform.Web.Pages.Admin.Formations.Modules.DetailsModel
+<h1>@Model.Module.Titre</h1>
+<p>Modalité : @Model.Module.TypeModalite</p>
+<p>@Model.Module.Description</p>
+@if (Model.Module.TypeModalite == AIFormationPlatform.Core.Enums.TypeModalite.Cours)
+{
+    <article>@Model.Module.ContenuTexte</article>
+}
+@if (Model.Module.Exercice is not null)
+{
+    <section><h2>Exercice</h2><p>@Model.Module.Exercice.Enonce</p><p>@Model.Module.Exercice.Consignes</p></section>
+}
+@if (Model.Module.Quiz is not null)
+{
+    <section><h2>@Model.Module.Quiz.Titre</h2>
+    @foreach (var question in Model.Module.Quiz.Questions.OrderBy(q => q.Ordre))
+    {
+        <p><strong>@question.Enonce</strong></p><ul>@foreach (var reponse in question.Reponses) { <li>@reponse.Texte @(reponse.EstCorrecte ? "(correcte)" : "")</li> }</ul>
+    }
+    </section>
+}
+<a asp-page="Edit" asp-route-formationId="@Model.Module.FormationId" asp-route-id="@Model.Module.Id">Modifier</a> | <a asp-page="Index" asp-route-formationId="@Model.Module.FormationId">Retour</a>

@@ -89,8 +89,20 @@ public class AnamAvatarAdvancedService : IAvatarService
 
     public async Task<AvatarStartResult> StartSessionAsync(string script, AvatarPersonaConfig? personaOverride = null, CancellationToken cancellationToken = default)
     {
-        // Essaye de créer un token de session et de fournir une URL/session ready
-        var session = await CreateSessionTokenAsync(personaOverride, cancellationToken);
+        var persona = MergePersona(personaOverride);
+        if (!string.IsNullOrWhiteSpace(script))
+        {
+            var defaultPrompt = BuildDefaultPersona().SystemPrompt;
+            persona = persona with
+            {
+                SystemPrompt = string.IsNullOrWhiteSpace(defaultPrompt)
+                    ? script
+                    : $"{defaultPrompt}\n\n{script}"
+            };
+        }
+
+        // Le contexte est transmis lors de la création du token, avant le démarrage du streaming.
+        var session = await CreateSessionTokenAsync(persona, cancellationToken);
         if (!session.Success)
         {
             // fallback texte : retourne le script en tant que FallbackText

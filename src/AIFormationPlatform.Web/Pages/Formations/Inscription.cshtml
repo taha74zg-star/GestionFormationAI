@@ -1,0 +1,14 @@
+@page "/Formations/{id:int}/Inscription"
+@model AIFormationPlatform.Web.Pages.Formations.InscriptionModel
+<h1>Inscription à la formation</h1>
+<h2>@Model.Formation.Titre</h2>
+<p>@Model.Formation.Description</p>
+@if (Model.DejaInscrit)
+{
+    <p>Vous êtes déjà inscrit à cette formation.</p>
+    <p><a asp-page="/MesFormations">Voir mes formations</a></p>
+}
+else
+{
+    <form method="post"><button type="submit">Confirmer mon inscription</button> <a href="/">Annuler</a></form>
+}

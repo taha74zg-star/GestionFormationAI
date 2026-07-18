@@ -299,7 +299,15 @@
         setStatus('Connexion à l\'avatar...', 'loading');
 
         try {
-            const resp = await fetch('/api/session-token', { method: 'POST' });
+            const moduleId = Number(window.avatarModuleId);
+            const sessionRequest = Number.isInteger(moduleId) && moduleId > 0
+                ? {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ moduleId })
+                }
+                : { method: 'POST' };
+            const resp = await fetch('/api/session-token', sessionRequest);
             const data = await resp.json();
             if (data.error) throw new Error(data.error);
 

@@ -1,0 +1,5 @@
+@page "{id:int}"
+@model AIFormationPlatform.Web.Pages.Admin.Formateurs.DeleteModel
+<h1>Supprimer le formateur</h1>
+<p>Confirmez-vous la suppression de <strong>@Model.Formateur.Prenom @Model.Formateur.Nom</strong> ?</p>
+<form method="post"><input type="hidden" asp-for="Formateur.Id" /><button type="submit">Supprimer</button> <a asp-page="Index">Annuler</a></form>

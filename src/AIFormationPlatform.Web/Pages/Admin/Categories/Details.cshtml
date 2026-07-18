@@ -1,0 +1,9 @@
+@page "{id:int}"
+@model AIFormationPlatform.Web.Pages.Admin.Categories.DetailsModel
+<h1>@Model.Categorie.Nom</h1>
+<dl>
+    <dt>Description</dt><dd>@Model.Categorie.Description</dd>
+    <dt>Catégorie parente</dt><dd>@Model.Categorie.Parent?.Nom</dd>
+    <dt>Ordre</dt><dd>@Model.Categorie.Ordre</dd>
+</dl>
+<a asp-page="Edit" asp-route-id="@Model.Categorie.Id">Modifier</a> | <a asp-page="Index">Retour</a>

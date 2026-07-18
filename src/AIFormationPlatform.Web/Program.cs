@@ -1,12 +1,25 @@
 using System.Text.Json;
 using AIFormationPlatform.Core.Interfaces;
 using AIFormationPlatform.Infrastructure;
+using AIFormationPlatform.Infrastructure.Data;
+using AIFormationPlatform.Infrastructure.Identity;
 using AIFormationPlatform.Web.Features.Chat;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
-var appPort = Environment.GetEnvironmentVariable("PORT") ?? "5000";
-builder.WebHost.UseUrls($"http://*:{appPort}");
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrWhiteSpace(connectionString))
+    throw new InvalidOperationException("La variable ConnectionStrings__DefaultConnection est requise.");
+
+var appPort = Environment.GetEnvironmentVariable("PORT");
+if (!int.TryParse(appPort, out var port) || port is < 1 or > 65535)
+    throw new InvalidOperationException("La variable PORT doit contenir un port valide.");
+
+builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
 builder.Services.AddSingleton<OpenAIProvider>();
 builder.Services.AddSingleton<IChatService, ChatService>();
@@ -15,12 +28,38 @@ builder.Services.AddInfrastructure(builder.Configuration);
 
 // Add MVC support for Admin area (Razor views)
 builder.Services.AddControllersWithViews();
+builder.Services.AddRazorPages();
 
 var app = builder.Build();
 
-await app.Services.InitializeDatabaseAsync();
+try
+{
+    await using var migrationScope = app.Services.CreateAsyncScope();
+    var dbContext = migrationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    await dbContext.Database.MigrateAsync();
+}
+catch (Exception exception)
+{
+    app.Logger.LogCritical(
+        exception,
+        "Impossible de se connecter à la base de données ou d'appliquer les migrations EF au démarrage.");
+    throw;
+}
+
+using (var scope = app.Services.CreateScope())
+{
+    var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
+    foreach (var role in new[] { "Admin", "Formateur", "Apprenant" })
+    {
+        if (!await roleManager.RoleExistsAsync(role))
+            await roleManager.CreateAsync(new IdentityRole(role));
+    }
+}
 
 app.UseStaticFiles();
+app.UseRouting();
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.MapPost("/api/chat", async (ChatRequest req, IChatService chatService, HttpContext http) =>
 {
@@ -63,9 +102,41 @@ app.MapPost("/api/chat", async (ChatRequest req, IChatService chatService, HttpC
 
 app.MapPost("/api/session-token", async (
     IAvatarService avatarService,
+    ApplicationDbContext dbContext,
+    ClaimsPrincipal user,
     AvatarTokenRequest? req,
     CancellationToken cancellationToken) =>
 {
+    if (req?.ModuleId is not null)
+    {
+        if (user.Identity?.IsAuthenticated != true || !user.IsInRole("Apprenant"))
+            return Results.Forbid();
+
+        var apprenantId = user.FindFirstValue(ClaimTypes.NameIdentifier);
+        var module = await dbContext.Modules
+            .Where(m => m.Id == req.ModuleId.Value)
+            .Select(m => new { m.Id, m.FormationId, m.Titre, m.ContenuTexte })
+            .SingleOrDefaultAsync(cancellationToken);
+        if (module is null)
+            return Results.NotFound();
+
+        var estInscrit = await dbContext.Inscriptions.AnyAsync(
+            i => i.ApprenantId == apprenantId && i.FormationId == module.FormationId,
+            cancellationToken);
+        if (!estInscrit)
+            return Results.Forbid();
+
+        var contexteModule = $"""
+            Tu présentes le module suivant et réponds uniquement aux questions qui concernent son contenu.
+
+            Titre du module : {module.Titre}
+
+            Contenu du cours :
+            {module.ContenuTexte ?? "Aucun contenu texte n'est disponible pour ce module."}
+            """;
+        req = req with { SystemPrompt = contexteModule };
+    }
+
     AvatarPersonaConfig? persona = req is not null
         ? new AvatarPersonaConfig(
             req.PersonaName ?? string.Empty,
@@ -96,6 +167,8 @@ app.MapPost("/api/clear-session", (ChatClearRequest req) =>
     return Results.Ok(new { cleared = true });
 });
 
+app.MapRazorPages();
+app.MapControllers();
 app.MapFallbackToFile("index.html");
 
 app.Run();
@@ -108,4 +181,5 @@ public record AvatarTokenRequest(
     string? AvatarId = null,
     string? AvatarModel = null,
     string? VoiceId = null,
-    string? LlmId = null);
+    string? LlmId = null,
+    int? ModuleId = null);

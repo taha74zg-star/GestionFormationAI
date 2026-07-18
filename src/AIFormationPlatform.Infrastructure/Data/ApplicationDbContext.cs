@@ -63,12 +63,13 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
             entity.Property(f => f.Categorie).HasMaxLength(150);
             entity.Property(f => f.Niveau).HasMaxLength(50);
             entity.Property(f => f.ImageUrl).HasMaxLength(500);
-            entity.Property(f => f.DateCreation).HasDefaultValueSql("GETUTCDATE()");
+            entity.Property(f => f.DateCreation).HasDefaultValueSql("CURRENT_TIMESTAMP");
         });
 
         builder.Entity<Module>(entity =>
         {
             entity.Property(m => m.Titre).HasMaxLength(200);
+            entity.Property(m => m.ContenuTexte).HasColumnType("text");
             entity.HasIndex(m => new { m.FormationId, m.Ordre }).IsUnique();
             entity.HasOne(m => m.Formation)
                 .WithMany(f => f.Modules)
@@ -120,7 +121,7 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
 
         builder.Entity<Inscription>(entity =>
         {
-            entity.HasIndex(i => new { i.UserId, i.FormationId }).IsUnique();
+            entity.HasIndex(i => new { i.ApprenantId, i.FormationId }).IsUnique();
             entity.HasOne(i => i.Formation)
                 .WithMany(f => f.Inscriptions)
                 .HasForeignKey(i => i.FormationId)

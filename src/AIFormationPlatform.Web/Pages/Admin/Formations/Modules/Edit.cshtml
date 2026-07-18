@@ -1,0 +1,4 @@
+@page "/Admin/Formations/{formationId:int}/Modules/{id:int}/Edit"
+@model AIFormationPlatform.Web.Pages.Admin.Formations.Modules.EditModel
+<h1>Modifier le module — @Model.FormationTitre</h1>
+<partial name="_ModuleForm" model="Model.Form" />
