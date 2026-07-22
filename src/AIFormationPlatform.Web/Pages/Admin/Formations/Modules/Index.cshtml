@@ -1,16 +1,5 @@
 @page "/Admin/Formations/{formationId:int}/Modules"
 @model AIFormationPlatform.Web.Pages.Admin.Formations.Modules.IndexModel
-<h1>Modules — @Model.Formation.Titre</h1>
-<p><a asp-page="Create" asp-route-formationId="@Model.Formation.Id">Créer un module</a> · <a href="/Admin">Administration</a></p>
-<table>
-    <thead><tr><th>Ordre</th><th>Titre</th><th>Modalité</th><th></th></tr></thead>
-    <tbody>
-    @foreach (var module in Model.Modules)
-    {
-        <tr><td>@module.Ordre</td><td>@module.Titre</td><td>@module.TypeModalite</td>
-            <td><a asp-page="Details" asp-route-formationId="@Model.Formation.Id" asp-route-id="@module.Id">Détails</a> |
-                <a asp-page="Edit" asp-route-formationId="@Model.Formation.Id" asp-route-id="@module.Id">Modifier</a> |
-                <a asp-page="Delete" asp-route-formationId="@Model.Formation.Id" asp-route-id="@module.Id">Supprimer</a></td></tr>
-    }
-    </tbody>
-</table>
+@{ ViewData["Title"] = "Modules"; }
+<div class="d-flex justify-content-between align-items-center mb-4"><div><p class="eyebrow">@Model.Formation.Titre</p><h1>Modules</h1></div><a asp-page="Create" asp-route-formationId="@Model.Formation.Id" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Nouveau module</a></div>
+<div class="card border-0"><div class="list-group list-group-flush">@foreach (var module in Model.Modules) { <div class="list-group-item d-flex align-items-center gap-3 p-3"><i class="bi bi-grip-vertical text-secondary"></i><span class="badge badge-category">@module.Ordre</span><div class="flex-grow-1"><strong>@module.Titre</strong><div><partial name="_ModaliteBadge" model="module.TypeModalite" /></div></div><form method="post" asp-page-handler="Move" class="d-flex gap-1"><input type="hidden" name="formationId" value="@Model.Formation.Id" /><input type="hidden" name="id" value="@module.Id" /><button name="direction" value="up" class="btn btn-sm btn-light"><i class="bi bi-arrow-up"></i></button><button name="direction" value="down" class="btn btn-sm btn-light"><i class="bi bi-arrow-down"></i></button></form><a asp-page="Edit" asp-route-formationId="@Model.Formation.Id" asp-route-id="@module.Id" class="btn btn-sm btn-outline-primary">Modifier</a></div> }</div></div>

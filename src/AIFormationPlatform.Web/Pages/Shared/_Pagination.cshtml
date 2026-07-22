@@ -1,0 +1,5 @@
+@model AIFormationPlatform.Core.Interfaces.IPagedResult
+@if (Model.TotalPages > 1)
+{
+    <nav class="mt-4" aria-label="Pagination"><ul class="pagination justify-content-end"><li class="page-item @(Model.Page == 1 ? "disabled" : "")"><a class="page-link" href="?page=@(Model.Page - 1)&search=@Context.Request.Query["search"]&sort=@Context.Request.Query["sort"]">Précédent</a></li>@for (var pageNumber = 1; pageNumber <= Model.TotalPages; pageNumber++) { <li class="page-item @(pageNumber == Model.Page ? "active" : "")"><a class="page-link" href="?page=@(pageNumber)&search=@Context.Request.Query["search"]&sort=@Context.Request.Query["sort"]">@pageNumber</a></li> }<li class="page-item @(Model.Page == Model.TotalPages ? "disabled" : "")"><a class="page-link" href="?page=@(Model.Page + 1)&search=@Context.Request.Query["search"]&sort=@Context.Request.Query["sort"]">Suivant</a></li></ul></nav>
+}

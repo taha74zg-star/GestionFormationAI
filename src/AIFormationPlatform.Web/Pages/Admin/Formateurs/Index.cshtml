@@ -1,14 +1,9 @@
 @page
 @model AIFormationPlatform.Web.Pages.Admin.Formateurs.IndexModel
-<h1>Formateurs</h1>
-<p><a asp-page="Create">Créer un formateur</a> · <a href="/Admin">Administration</a></p>
-<table>
-    <thead><tr><th>Nom</th><th>Spécialités</th><th>Actif</th><th></th></tr></thead>
-    <tbody>
-    @foreach (var formateur in Model.Formateurs)
-    {
-        <tr><td>@formateur.Prenom @formateur.Nom</td><td>@formateur.Specialites</td><td>@formateur.EstActif</td>
-            <td><a asp-page="Details" asp-route-id="@formateur.Id">Détails</a> | <a asp-page="Edit" asp-route-id="@formateur.Id">Modifier</a> | <a asp-page="Delete" asp-route-id="@formateur.Id">Supprimer</a></td></tr>
-    }
-    </tbody>
-</table>
+@{ ViewData["Title"] = "Formateurs"; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4"><div><p class="eyebrow">Intervenants</p><h1>Formateurs</h1></div><a asp-page="Create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Nouveau formateur</a></div>
+<form class="card card-body border-0 mb-4" method="get"><div class="row g-2"><div class="col-md"><input class="form-control" name="search" value="@Model.Search" placeholder="Nom ou spécialité..." /></div><div class="col-md-auto"><button class="btn btn-outline-primary">Rechercher</button></div></div></form>
+@if (Model.Result.TotalCount == 0) { <div class="empty-state card border-0 text-center p-5"><i class="bi bi-people fs-1 text-primary"></i><h2 class="h4 mt-3">Aucun formateur</h2><p class="text-secondary">Ajoutez un intervenant pour commencer à bâtir votre équipe.</p><a asp-page="Create" class="btn btn-primary">Créer un formateur</a></div> }
+else { <div class="card border-0 overflow-hidden"><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Formateur</th><th>Spécialité</th><th>Formations actives</th><th>Statut</th><th class="text-end">Actions</th></tr></thead><tbody>@foreach (var item in Model.Result.Items) { var f=item.Formateur; <tr><td><div class="d-flex align-items-center gap-3"><img class="table-avatar" src="@(f.PhotoUrl ?? "https://placehold.co/80x80/e9edff/263b8f?text=" + f.Prenom[0])" alt="" /><div><strong>@f.Prenom @f.Nom</strong><div class="small text-secondary">@f.UserId</div></div></div></td><td>@(f.Specialites ?? "—")</td><td><span class="badge badge-category">@item.FormationsActives</span></td><td><span class="badge @(f.EstActif ? "badge-quiz" : "text-bg-light")">@(f.EstActif ? "Actif" : "Inactif")</span></td><td class="text-end"><a asp-page="Edit" asp-route-id="@f.Id" class="btn btn-sm btn-light"><i class="bi bi-pencil"></i></a><button class="btn btn-sm btn-light text-danger ms-1" data-bs-toggle="modal" data-bs-target="#deleteTrainer" data-id="@f.Id" data-name="@f.Prenom @f.Nom"><i class="bi bi-trash"></i></button></td></tr>}</tbody></table></div></div><partial name="_Pagination" model="Model.Result" /> }
+<div class="modal fade" id="deleteTrainer" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><form method="post" asp-page-handler="Delete"><div class="modal-header"><h2 class="h5 modal-title">Supprimer le formateur</h2><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">Supprimer <strong id="trainerName"></strong> ? Les formations actives bloquent cette action.</div><div class="modal-footer"><input type="hidden" name="id" id="trainerId" /><button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button><button class="btn btn-danger">Supprimer</button></div></form></div></div></div>
+@section Scripts { <script>document.getElementById('deleteTrainer').addEventListener('show.bs.modal', e => { const b=e.relatedTarget; document.getElementById('trainerId').value=b.dataset.id; document.getElementById('trainerName').textContent=b.dataset.name; });</script> }

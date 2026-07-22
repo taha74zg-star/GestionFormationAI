@@ -75,7 +75,8 @@ public class AnamAvatarService : IAvatarService
                     avatarModel = persona.AvatarModel,
                     voiceId = persona.VoiceId,
                     llmId = persona.LlmId,
-                    systemPrompt = persona.SystemPrompt
+                    systemPrompt = persona.SystemPrompt,
+                    languageCode = "fr"
                 }
             };
 

@@ -1,0 +1,31 @@
+<nav class="navbar navbar-expand-lg app-navbar sticky-top">
+    <div class="container">
+        <a class="navbar-brand brand" href="/"><span class="brand-mark"><i class="bi bi-mortarboard-fill"></i></span><span>AIFormation</span></a>
+        <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav"><i class="bi bi-list fs-3"></i></button>
+        <div class="collapse navbar-collapse" id="mainNav">
+            <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+                @if (User.Identity?.IsAuthenticated == true)
+                {
+                    @if (User.IsInRole("Apprenant"))
+                    {
+                        <li class="nav-item"><a class="nav-link" href="/Apprenant/MesFormations">Mes formations</a></li>
+                    }
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <li class="nav-item"><a class="nav-link" href="/Admin">Administration</a></li>
+                    }
+                    @if (User.IsInRole("Formateur"))
+                    {
+                        <li class="nav-item"><a class="nav-link" href="/Formateur">Mon espace</a></li>
+                    }
+                    <li class="nav-item ms-lg-2"><a class="btn btn-outline-primary btn-sm" href="/Account/Logout"><i class="bi bi-box-arrow-right me-1"></i> Déconnexion</a></li>
+                }
+                else
+                {
+                    <li class="nav-item"><a class="nav-link" href="/Account/Login">Connexion</a></li>
+                    <li class="nav-item ms-lg-2"><a class="btn btn-primary btn-sm" href="/Account/Register">Commencer</a></li>
+                }
+            </ul>
+        </div>
+    </div>
+</nav>

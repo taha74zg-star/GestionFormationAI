@@ -1,19 +1,21 @@
 @page
 @model AIFormationPlatform.Web.Pages.Account.LoginModel
-@{
-    ViewData["Title"] = "Connexion";
-}
-
-<h1>Connexion</h1>
-
-<form method="post">
-    <div asp-validation-summary="ModelOnly"></div>
-    <input asp-for="Input.Email" placeholder="Adresse e-mail" autocomplete="email" />
-    <span asp-validation-for="Input.Email"></span>
-    <input asp-for="Input.Password" placeholder="Mot de passe" autocomplete="current-password" />
-    <span asp-validation-for="Input.Password"></span>
-    <label><input asp-for="Input.RememberMe" /> Se souvenir de moi</label>
-    <button type="submit">Se connecter</button>
-</form>
-
-<p><a asp-page="Register">Créer un compte</a></p>
+@{ ViewData["Title"] = "Connexion"; }
+<div class="auth-shell">
+    <section class="auth-panel auth-panel-copy d-none d-lg-flex">
+        <div><span class="auth-kicker"><i class="bi bi-stars"></i> Apprendre autrement</span><h1>Votre parcours,<br />à votre rythme.</h1><p>Accédez à des formations guidées par des experts et un avatar IA qui vous accompagne.</p></div>
+        <div class="auth-orb auth-orb-one"></div><div class="auth-orb auth-orb-two"></div>
+    </section>
+    <section class="auth-panel auth-panel-form">
+        <div class="auth-form-wrap"><p class="eyebrow">Bon retour</p><h1 class="h2 mb-2">Connexion</h1><p class="text-secondary mb-4">Connectez-vous pour reprendre votre apprentissage.</p>
+            <form method="post" novalidate>
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger py-2 small"></div>
+                <div class="mb-3"><label asp-for="Input.Email" class="form-label">Adresse e-mail</label><input asp-for="Input.Email" class="form-control" placeholder="vous@exemple.com" autocomplete="email" /><span asp-validation-for="Input.Email" class="text-danger small"></span></div>
+                <div class="mb-3"><label asp-for="Input.Password" class="form-label">Mot de passe</label><input asp-for="Input.Password" class="form-control" placeholder="••••••••" autocomplete="current-password" /><span asp-validation-for="Input.Password" class="text-danger small"></span></div>
+                <div class="form-check mb-4"><input asp-for="Input.RememberMe" class="form-check-input" /><label asp-for="Input.RememberMe" class="form-check-label">Se souvenir de moi</label></div>
+                <button class="btn btn-primary w-100" type="submit">Se connecter <i class="bi bi-arrow-right ms-1"></i></button>
+            </form>
+            <p class="text-center text-secondary mt-4 mb-0">Nouveau sur AIFormation ? <a asp-page="Register" class="fw-bold">Créer un compte</a></p>
+        </div>
+    </section>
+</div>

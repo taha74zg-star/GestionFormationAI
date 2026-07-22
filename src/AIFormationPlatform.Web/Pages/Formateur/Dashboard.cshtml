@@ -1,0 +1,33 @@
+@page "/Formateur/Dashboard"
+@model AIFormationPlatform.Web.Pages.Formateur.DashboardModel
+@{
+    ViewData["Title"] = "Tableau de bord formateur";
+}
+
+<section class="card border-0 shadow-sm p-4 p-md-5 mt-3" style="min-height: 420px; border-radius: 20px;">
+    <div class="row align-items-center g-5">
+        <div class="col-lg-8">
+            <p class="eyebrow mb-2">Espace formateur</p>
+            <h1 class="display-5 fw-bold mb-3">Bienvenue, Formateur IA</h1>
+            <p class="lead text-secondary mb-4">
+                Vous êtes maintenant connecté à l'espace formateur. Gérez vos formations,
+                préparez vos modules et accompagnez les apprenants.
+            </p>
+            <div class="d-flex flex-wrap gap-3">
+                <a class="btn btn-primary btn-lg" href="/Admin/Formations">
+                    <i class="bi bi-collection-play me-2"></i>Voir les formations
+                </a>
+                <a class="btn btn-outline-primary btn-lg" href="/">
+                    <i class="bi bi-house me-2"></i>Accueil
+                </a>
+            </div>
+        </div>
+        <div class="col-lg-4 text-center">
+            <div class="d-inline-flex align-items-center justify-content-center bg-primary-subtle text-primary rounded-circle" style="width: 160px; height: 160px;">
+                <i class="bi bi-person-video3" style="font-size: 4.5rem;"></i>
+            </div>
+            <p class="fw-semibold mt-3 mb-0">Formateur IA prêt</p>
+            <small class="text-secondary">Ouvrez une formation pour tester les contenus.</small>
+        </div>
+    </div>
+</section>

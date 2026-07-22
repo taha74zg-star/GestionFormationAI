@@ -1,4 +1,4 @@
-using System.Text.Json;
+﻿using System.Text.Json;
 using AIFormationPlatform.Core.Interfaces;
 using AIFormationPlatform.Infrastructure;
 using AIFormationPlatform.Infrastructure.Data;
@@ -17,7 +17,7 @@ if (string.IsNullOrWhiteSpace(connectionString))
 
 var appPort = Environment.GetEnvironmentVariable("PORT");
 if (!int.TryParse(appPort, out var port) || port is < 1 or > 65535)
-    throw new InvalidOperationException("La variable PORT doit contenir un port valide.");
+    port = 8080;
 
 builder.WebHost.UseUrls($"http://0.0.0.0:{port}");
 
@@ -37,12 +37,13 @@ try
     await using var migrationScope = app.Services.CreateAsyncScope();
     var dbContext = migrationScope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
     await dbContext.Database.MigrateAsync();
+    await DemoDataSeeder.SeedAsync(migrationScope.ServiceProvider);
 }
 catch (Exception exception)
 {
     app.Logger.LogCritical(
         exception,
-        "Impossible de se connecter à la base de données ou d'appliquer les migrations EF au démarrage.");
+        "Impossible de se connecter Ã  la base de donnÃ©es ou d'appliquer les migrations EF au dÃ©marrage.");
     throw;
 }
 
@@ -111,7 +112,7 @@ app.MapPost("/api/chat", async (ChatRequest req, IChatService chatService, HttpC
     await http.Response.Body.FlushAsync();
 
     return Results.Empty;
-}).RequireAuthorization();
+});
 
 app.MapPost("/api/session-token", async (
     IAvatarService avatarService,
@@ -146,7 +147,7 @@ app.MapPost("/api/session-token", async (
     }
 
     return Results.Json(new { sessionToken = start.SessionToken });
-}).RequireAuthorization();
+});
 
 app.MapPost("/api/clear-session", (ChatClearRequest req) =>
 {
@@ -185,7 +186,8 @@ static async Task<(string? Prompt, IResult? Error)> GetModuleContextAsync(
         return (null, Results.Forbid());
 
     var prompt = $"""
-        Tu présentes le module suivant et réponds uniquement aux questions qui concernent son contenu.
+        Tu presentes le module suivant et reponds uniquement aux questions qui concernent son contenu.
+        Parle en francais par defaut. Si l'apprenant demande explicitement une autre langue, reponds dans cette langue jusqu'a ce qu'il demande un nouveau changement.
 
         Titre du module : {module.Titre}
 

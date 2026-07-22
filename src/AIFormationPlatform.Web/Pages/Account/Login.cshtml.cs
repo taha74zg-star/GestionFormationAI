@@ -39,8 +39,8 @@ public class LoginModel(SignInManager<ApplicationUser> signInManager, UserManage
     }
 
     private static string GetRoleLandingPage(IList<string> roles) =>
-        roles.Contains("Admin") ? "/Admin" :
-        roles.Contains("Formateur") ? "/Formateur" : "/Apprenant";
+        roles.Contains("Admin") ? "/Admin/Dashboard" :
+        roles.Contains("Formateur") ? "/Formateur/Dashboard" : "/Apprenant/MesFormations";
 
     public sealed class LoginInput
     {

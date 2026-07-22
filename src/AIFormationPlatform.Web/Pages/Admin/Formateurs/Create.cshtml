@@ -1,14 +1,5 @@
 @page
 @model AIFormationPlatform.Web.Pages.Admin.Formateurs.CreateModel
-<h1>Créer un formateur</h1>
-<form method="post">
-    <div asp-validation-summary="ModelOnly"></div>
-    <p><label asp-for="Formateur.Prenom"></label><input asp-for="Formateur.Prenom" /><span asp-validation-for="Formateur.Prenom"></span></p>
-    <p><label asp-for="Formateur.Nom"></label><input asp-for="Formateur.Nom" /><span asp-validation-for="Formateur.Nom"></span></p>
-    <p><label asp-for="Formateur.UserId">Identifiant utilisateur</label><input asp-for="Formateur.UserId" /></p>
-    <p><label asp-for="Formateur.Bio"></label><textarea asp-for="Formateur.Bio"></textarea></p>
-    <p><label asp-for="Formateur.Specialites"></label><input asp-for="Formateur.Specialites" /></p>
-    <p><label asp-for="Formateur.PhotoUrl"></label><input asp-for="Formateur.PhotoUrl" type="url" /></p>
-    <p><label><input asp-for="Formateur.EstActif" /> Actif</label></p>
-    <button type="submit">Créer</button> <a asp-page="Index">Annuler</a>
-</form>
+@{ ViewData["Title"] = "Nouveau formateur"; }
+<div class="d-flex justify-content-between align-items-center mb-4"><div><p class="eyebrow">Intervenants</p><h1>Nouveau formateur</h1></div><a asp-page="Index" class="btn btn-outline-primary">Retour</a></div>
+<form method="post" class="card border-0 p-4 p-lg-5"><div asp-validation-summary="ModelOnly" class="alert alert-danger"></div><div class="row g-3"><div class="col-md-6"><label asp-for="Formateur.Prenom" class="form-label"></label><input asp-for="Formateur.Prenom" class="form-control" /></div><div class="col-md-6"><label asp-for="Formateur.Nom" class="form-label"></label><input asp-for="Formateur.Nom" class="form-control" /></div><div class="col-md-6"><label asp-for="Formateur.Specialites" class="form-label">Spécialités</label><input asp-for="Formateur.Specialites" class="form-control" /></div><div class="col-md-6"><label asp-for="Formateur.PhotoUrl" class="form-label">URL de la photo</label><input asp-for="Formateur.PhotoUrl" class="form-control" /></div><div class="col-12"><label asp-for="Formateur.Bio" class="form-label"></label><textarea asp-for="Formateur.Bio" class="form-control"></textarea></div></div><hr class="my-4" /><h2 class="h5">Compte Identity associé</h2><p class="text-secondary small">Liez un compte existant, ou créez un nouveau compte Formateur.</p><div class="mb-3"><label asp-for="Account.ExistingEmail" class="form-label">E-mail d’un compte existant</label><input asp-for="Account.ExistingEmail" class="form-control" /><span asp-validation-for="Account.ExistingEmail" class="text-danger small"></span></div><div class="form-check mb-3"><input asp-for="Account.CreateAccount" class="form-check-input" /><label asp-for="Account.CreateAccount" class="form-check-label">Créer un nouveau compte Formateur</label></div><div class="row g-3"><div class="col-md-6"><label asp-for="Account.NewEmail" class="form-label">E-mail du nouveau compte</label><input asp-for="Account.NewEmail" class="form-control" /></div><div class="col-md-6"><label asp-for="Account.Password" class="form-label">Mot de passe temporaire</label><input asp-for="Account.Password" class="form-control" /></div></div><div class="mt-4"><button class="btn btn-primary">Créer le formateur</button></div></form>

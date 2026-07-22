@@ -1,0 +1,5 @@
+@page "/Admin/Dashboard"
+@model AIFormationPlatform.Web.Pages.Admin.DashboardModel
+@{ ViewData["Title"] = "Tableau de bord"; }
+<div class="d-flex align-items-center justify-content-between mb-4"><div><p class="eyebrow">Administration</p><h1>Bonjour, administrateur</h1><p class="text-secondary mb-0">Pilotez le catalogue et les intervenants depuis cet espace.</p></div><a class="btn btn-primary" href="/Admin/Categories"><i class="bi bi-plus-lg me-1"></i> Gérer le catalogue</a></div>
+<div class="row g-4"><div class="col-md-4"><div class="card p-4 h-100"><i class="bi bi-tags text-primary fs-3 mb-3"></i><h2 class="h5">Catégories</h2><p class="text-secondary">Organisez le catalogue de formation.</p><a href="/Admin/Categories">Ouvrir <i class="bi bi-arrow-right"></i></a></div></div><div class="col-md-4"><div class="card p-4 h-100"><i class="bi bi-people text-primary fs-3 mb-3"></i><h2 class="h5">Formateurs</h2><p class="text-secondary">Gérez les profils des intervenants.</p><a href="/Admin/Formateurs">Ouvrir <i class="bi bi-arrow-right"></i></a></div></div></div>

@@ -1,27 +1,9 @@
 @page
 @model AIFormationPlatform.Web.Pages.Admin.Categories.IndexModel
-@{
-    ViewData["Title"] = "Catégories";
-}
-
-<h1>Catégories</h1>
-<p><a asp-page="Create">Créer une catégorie</a> · <a href="/Admin">Administration</a></p>
-
-<table>
-    <thead><tr><th>Nom</th><th>Parent</th><th>Ordre</th><th></th></tr></thead>
-    <tbody>
-    @foreach (var categorie in Model.Categories)
-    {
-        <tr>
-            <td>@categorie.Nom</td>
-            <td>@categorie.Parent?.Nom</td>
-            <td>@categorie.Ordre</td>
-            <td>
-                <a asp-page="Details" asp-route-id="@categorie.Id">Détails</a> |
-                <a asp-page="Edit" asp-route-id="@categorie.Id">Modifier</a> |
-                <a asp-page="Delete" asp-route-id="@categorie.Id">Supprimer</a>
-            </td>
-        </tr>
-    }
-    </tbody>
-</table>
+@{ ViewData["Title"] = "Catégories"; }
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4"><div><p class="eyebrow">Catalogue</p><h1>Catégories</h1></div><a asp-page="Create" class="btn btn-primary"><i class="bi bi-plus-lg me-1"></i> Nouvelle catégorie</a></div>
+<form class="card card-body border-0 mb-4" method="get"><div class="row g-2"><div class="col-md"><input class="form-control" name="search" value="@Model.Search" placeholder="Rechercher une catégorie..." /></div><div class="col-md-3"><select class="form-select" name="sort"><option value="">Nom (A-Z)</option><option value="name_desc" selected="@(Model.Sort == "name_desc")">Nom (Z-A)</option><option value="order" selected="@(Model.Sort == "order")">Ordre</option></select></div><div class="col-md-auto"><button class="btn btn-outline-primary w-100">Filtrer</button></div></div></form>
+@if (Model.Result.TotalCount == 0) { <div class="empty-state card border-0 text-center p-5"><i class="bi bi-tags fs-1 text-primary"></i><h2 class="h4 mt-3">Aucune catégorie</h2><p class="text-secondary">Créez votre première catégorie pour organiser le catalogue.</p><a asp-page="Create" class="btn btn-primary">Créer une catégorie</a></div> }
+else { <div class="card border-0 overflow-hidden"><div class="table-responsive"><table class="table table-hover mb-0"><thead><tr><th>Catégorie</th><th>Parent</th><th>Ordre</th><th class="text-end">Actions</th></tr></thead><tbody>@foreach (var item in Model.Result.Items) { <tr><td class="fw-bold">@item.Nom</td><td>@(item.Parent?.Nom ?? "—")</td><td>@item.Ordre</td><td class="text-end"><a asp-page="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-light" title="Modifier"><i class="bi bi-pencil"></i></a><button class="btn btn-sm btn-light text-danger ms-1" data-bs-toggle="modal" data-bs-target="#deleteCategory" data-id="@item.Id" data-name="@item.Nom" title="Supprimer"><i class="bi bi-trash"></i></button></td></tr>}</tbody></table></div></div><partial name="_Pagination" model="Model.Result" /> }
+<div class="modal fade" id="deleteCategory" tabindex="-1"><div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 shadow"><form method="post" asp-page-handler="Delete"><div class="modal-header"><h2 class="h5 modal-title">Supprimer la catégorie</h2><button class="btn-close" data-bs-dismiss="modal"></button></div><div class="modal-body">Voulez-vous vraiment supprimer <strong id="categoryName"></strong> ?</div><div class="modal-footer"><input type="hidden" name="id" id="categoryId" /><button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button><button class="btn btn-danger">Supprimer</button></div></form></div></div></div>
+@section Scripts { <script>document.getElementById('deleteCategory').addEventListener('show.bs.modal', e => { const b=e.relatedTarget; document.getElementById('categoryId').value=b.dataset.id; document.getElementById('categoryName').textContent=b.dataset.name; });</script> }

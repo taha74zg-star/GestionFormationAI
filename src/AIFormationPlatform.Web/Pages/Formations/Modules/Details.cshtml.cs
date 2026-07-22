@@ -18,7 +18,11 @@ public class DetailsModel(ApplicationDbContext context) : PageModel
         var apprenantId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         var estInscrit = await context.Inscriptions.AnyAsync(
             i => i.ApprenantId == apprenantId && i.FormationId == formationId);
-        if (!estInscrit) return Forbid();
+        if (!estInscrit)
+        {
+            TempData["Error"] = "Inscrivez-vous pour accéder à ce contenu.";
+            return RedirectToPage("/Apprenant/Formation", new { id = formationId });
+        }
 
         var module = await context.Modules.SingleOrDefaultAsync(m => m.Id == id && m.FormationId == formationId);
         if (module is null) return NotFound();

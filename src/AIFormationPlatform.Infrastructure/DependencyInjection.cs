@@ -52,6 +52,7 @@ public static class DependencyInjection
 
         // Formation service
         services.AddScoped<AIFormationPlatform.Core.Interfaces.IFormationService, AIFormationPlatform.Infrastructure.Services.FormationService>();
+        services.AddScoped<AIFormationPlatform.Core.Interfaces.IAdminCatalogService, AIFormationPlatform.Infrastructure.Services.AdminCatalogService>();
 
         return services;
     }

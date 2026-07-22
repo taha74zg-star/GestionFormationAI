@@ -1,0 +1,4 @@
+@page "/Apprenant/Formations/{id:int}"
+@model AIFormationPlatform.Web.Pages.Apprenant.FormationModel
+@using AIFormationPlatform.Core.Enums
+<p class="eyebrow">@Model.Formation.Categorie</p><h1>@Model.Formation.Titre</h1><p class="lead text-secondary">@Model.Formation.Description</p>@if(!Model.Inscrit){<form method="post" asp-page-handler="Inscrire"><button class="btn btn-primary">S'inscrire gratuitement</button></form>}else{<span class="badge badge-quiz">Vous êtes inscrit</span>}<hr class="my-5"/><h2>Programme</h2><div class="list-group">@foreach(var m in Model.Formation.Modules.OrderBy(m=>m.Ordre)){<a class="list-group-item list-group-item-action d-flex justify-content-between" asp-page="/Formations/Modules/Details" asp-route-formationId="@Model.Formation.Id" asp-route-id="@m.Id"><span>@m.Titre</span><partial name="_ModaliteBadge" model="m.TypeModalite" /></a>}</div>

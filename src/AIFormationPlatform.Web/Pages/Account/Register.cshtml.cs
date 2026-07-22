@@ -32,7 +32,7 @@ public class RegisterModel(UserManager<ApplicationUser> userManager, SignInManag
         if (!result.Succeeded)
         {
             foreach (var error in result.Errors)
-                ModelState.AddModelError(string.Empty, error.Description);
+                ModelState.AddModelError(string.Empty, ToFrenchMessage(error));
             return Page();
         }
 
@@ -46,7 +46,7 @@ public class RegisterModel(UserManager<ApplicationUser> userManager, SignInManag
         }
 
         await signInManager.SignInAsync(user, isPersistent: false);
-        return LocalRedirect("/Apprenant");
+        return LocalRedirect("/Apprenant/MesFormations");
     }
 
     public sealed class RegisterInput
@@ -67,4 +67,15 @@ public class RegisterModel(UserManager<ApplicationUser> userManager, SignInManag
         public string ConfirmPassword { get; set; } = string.Empty;
 
     }
+
+    private static string ToFrenchMessage(IdentityError error) => error.Code switch
+    {
+        "DuplicateEmail" or "DuplicateUserName" => "Cette adresse e-mail est déjà utilisée.",
+        "PasswordTooShort" => "Le mot de passe doit contenir au moins 8 caractères.",
+        "PasswordRequiresNonAlphanumeric" => "Le mot de passe doit contenir au moins un caractère spécial.",
+        "PasswordRequiresDigit" => "Le mot de passe doit contenir au moins un chiffre.",
+        "PasswordRequiresLower" => "Le mot de passe doit contenir une lettre minuscule.",
+        "PasswordRequiresUpper" => "Le mot de passe doit contenir une lettre majuscule.",
+        _ => error.Description
+    };
 }
