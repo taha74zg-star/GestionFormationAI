@@ -1,116 +1,78 @@
-# AI Formation Platform
+# AIFormationPlatform
 
-Application web ASP.NET Core de gestion des formations avec module **formateur IA** (avatar conversationnel Anam.ai).
+Plateforme de formation en ligne construite avec ASP.NET Core. Elle propose des espaces Admin, Formateur et Apprenant, ainsi qu'un avatar IA Anam.ai pour accompagner les apprenants.
 
-## Architecture
+## Liens de test
 
-```
-src/
-├── AIFormationPlatform.Core/           # Entités, enums, interfaces (IAvatarService)
-├── AIFormationPlatform.Infrastructure/ # EF Core, Identity, AnamAvatarService
-└── AIFormationPlatform.Web/            # API Minimal + UI statique (demo avatar)
-```
+| Environnement | Lien |
+|---|---|
+| Application locale | `http://localhost:8080` |
+| Connexion locale | `http://localhost:8080/Account/Login` |
+| Administration | `http://localhost:8080/Admin/Dashboard` |
+| Comptes | `http://localhost:8080/Admin/Comptes` |
+| Deploiement Railway | A renseigner apres le deploiement Railway |
 
-## Prérequis
+> Apres le deploiement, remplacez la derniere ligne par l'URL publique Railway et ajoutez `/Account/Login` pour le lien de connexion.
 
-- [.NET 10 SDK](https://dotnet.microsoft.com/download)
-- [Docker](https://www.docker.com/) (optionnel, pour PostgreSQL local)
-- Clés API : **OpenAI** (chat texte) et **Anam.ai** (avatar vocal)
+## Comptes de demonstration
 
-## Démarrage rapide
+Les comptes suivants sont crees au demarrage de l'application si la base de donnees est vide :
 
-Lancez PostgreSQL, puis configurez les variables requises :
+| Role | E-mail | Mot de passe |
+|---|---|---|
+| Administrateur | `admin@aiformation.local` | `ChangeMe!2026` |
+| Formateur IA | `formateur.ia@aiformation.local` | `ChangeMe!2026` |
+
+Changez ces mots de passe avant une mise en production.
+
+Depuis le compte Administrateur, la page **Comptes** permet de creer des comptes et de lancer rapidement une session de test Formateur IA.
+
+## Tester rapidement la plateforme
+
+1. Demarrez l'application avec `dotnet run --project src/AIFormationPlatform.Web`.
+2. Ouvrez `http://localhost:8080/Account/Login`.
+3. Connectez-vous avec le compte Administrateur.
+4. Ouvrez la page **Formations** pour voir les formations de demonstration : **Introduction a .NET** et **Fondamentaux des reseaux**.
+5. Ouvrez **Comptes**, puis cliquez sur **Demarrer le Formateur IA** pour tester l'espace formateur.
+6. Pour tester Anam, ouvrez un module depuis l'espace Apprenant. L'avatar repond en francais par defaut et peut changer de langue si vous le lui demandez.
+
+## Prerequis et configuration
+
+- .NET 10 SDK
+- PostgreSQL
+- Une cle API Anam (`ANAM_API_KEY`) pour l'avatar
+- Une cle Gemini (`GEMINI_API_KEY`) pour le chat texte optionnel
+
+Exemple PowerShell pour le developpement local :
 
 ```powershell
-docker compose up -d postgres
-cd src/AIFormationPlatform.Web
 $env:PORT = "8080"
-$env:ConnectionStrings__DefaultConnection = "Host=localhost;Port=5432;Database=AIFormationPlatform;Username=postgres;Password=YourStrongPassword"
-$env:OPENAI_API_KEY = "sk-..."
-$env:ANAM_API_KEY = "..."
-dotnet run
-```
-
-Ouvrir http://localhost:8080
-
-## Démarrage avec PostgreSQL
-
-1. Lancer PostgreSQL :
-
-```powershell
-docker compose up -d postgres
-```
-
-2. Configurer la connexion (copier `.env.example` ou créer `appsettings.Development.json`) :
-
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Port=5432;Database=AIFormationPlatform;Username=postgres;Password=YourStrongPassword"
-  }
-}
-```
-
-3. Appliquer les migrations (automatique au démarrage, ou manuellement) :
-
-```powershell
-dotnet ef database update --project src/AIFormationPlatform.Infrastructure --startup-project src/AIFormationPlatform.Web
-```
-
-4. Lancer l'application :
-
-```powershell
+$env:ConnectionStrings__DefaultConnection = "Host=localhost;Port=5432;Database=AIFormationPlatform;Username=postgres;Password=VotreMotDePasse"
+$env:ANAM_API_KEY = "votre-cle-anam"
+$env:GEMINI_API_KEY = "votre-cle-gemini"
 dotnet run --project src/AIFormationPlatform.Web
 ```
 
-## Variables d'environnement
+Les migrations sont appliquees automatiquement au demarrage.
 
-| Variable | Description |
-|----------|-------------|
-| `ConnectionStrings__DefaultConnection` | Chaîne PostgreSQL |
-| `OPENAI_API_KEY` | Clé API OpenAI (chat) |
-| `ANAM_API_KEY` | Clé API Anam.ai |
-| `ANAM_AVATAR_ID` | ID de l'avatar Anam |
-| `ANAM_VOICE_ID` | ID de la voix |
-| `ANAM_AVATAR_MODEL` | Modèle avatar (ex. `cara-4`) |
-| `ANAM_LLM_ID` | LLM Anam (ex. `CUSTOMER_CLIENT_V1`) |
-| `PORT` | Port HTTP (Railway) |
+## Architecture
 
-Voir [.env.example](.env.example) pour la liste complète.
-
-## API existante (rétrocompatible)
-
-| Endpoint | Description |
-|----------|-------------|
-| `POST /api/chat` | Chat texte streaming (SSE) |
-| `POST /api/session-token` | Token session avatar Anam |
-| `POST /api/clear-session` | Effacer l'historique chat |
-
-## Déploiement Railway
-
-1. Créer un service **PostgreSQL** et renseigner `ConnectionStrings__DefaultConnection`
-2. Ajouter les variables `OPENAI_API_KEY`, `ANAM_API_KEY`, etc.
-3. Railway détecte le `Dockerfile` à la racine
-
-```powershell
-docker build -t ai-formation-platform .
-# Exemple de run local (Railway utilisera sa propre image/variables)
-docker run -p 8080:8080 \
-  -e PORT=8080 \
-  -e ConnectionStrings__DefaultConnection="Host=host.docker.internal;Port=5432;Database=AIFormationPlatform;Username=postgres;Password=YourStrongPassword" \
-  -e ANAM_API_KEY=... \
-  -e OPENAI_API_KEY=... \
-  ai-formation-platform
+```text
+src/
+|- AIFormationPlatform.Core/           Entites, enums et interfaces
+|- AIFormationPlatform.Infrastructure/ EF Core, Identity, PostgreSQL et Anam
+`- AIFormationPlatform.Web/            Razor Pages, API minimale et interface web
 ```
 
-## État d'avancement
+## Deploiement Railway
 
-- [x] **Étape 0** — Architecture Core/Infrastructure, EF Core, Identity (schéma), `IAvatarService`
-- [ ] Étape 1 — Authentification (pages Razor)
-- [ ] Étape 2 — Admin catégories + formateurs
-- [ ] Étape 3 — CRUD formations
-- [ ] …
+Configurez au minimum les variables suivantes dans Railway :
 
-## Licence
+| Variable | Description |
+|---|---|
+| `DATABASE_URL` | URL PostgreSQL fournie par Railway |
+| `PORT` | Port HTTP fourni par Railway |
+| `ANAM_API_KEY` | Cle API Anam.ai |
+| `GEMINI_API_KEY` | Cle API Google Gemini, si le chat texte est utilise |
 
-Projet privé — usage interne.
+Le projet contient un `Dockerfile` et un fichier `railway.json` pour le deploiement.
